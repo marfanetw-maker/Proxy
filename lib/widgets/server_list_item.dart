@@ -13,8 +13,7 @@ class ServerListItem extends StatefulWidget {
 }
 
 class _ServerListItemState extends State<ServerListItem> {
-  int? _pingDelay;
-  bool _isPinging = false;
+  // Removed ping-related variables
 
   @override
   Widget build(BuildContext context) {
@@ -145,13 +144,5 @@ class _ServerListItemState extends State<ServerListItem> {
     }
   }
 
-  // Helper method to get color based on ping delay
-  Color _getPingColor(int pingDelay) {
-    if (pingDelay < 0) return Colors.red;
-    if (pingDelay < 100) return Colors.green;
-    if (pingDelay < 300) return Colors.lightGreen;
-    if (pingDelay < 500) return Colors.amber;
-    if (pingDelay < 1000) return Colors.orange;
-    return Colors.red;
-  }
+  // Removed _getPingColor method
 }

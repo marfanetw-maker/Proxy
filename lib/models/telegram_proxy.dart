@@ -69,6 +69,10 @@ class TelegramProxy {
   String get telegramUrl {
     return 'tg://proxy?server=$host&port=$port&secret=$secret';
   }
+  
+  String get telegramHttpsUrl {
+    return 'https://t.me/proxy?server=$host&port=$port&secret=$secret';
+  }
 
   @override
   String toString() {

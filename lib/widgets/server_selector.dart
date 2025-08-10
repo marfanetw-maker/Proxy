@@ -72,15 +72,34 @@ class ServerSelector extends StatelessWidget {
                 onTap: isConnecting
                     ? null
                     : () {
-                        showServerSelector(
-                          context: context,
-                          configs: configs,
-                          selectedConfig: selectedConfig,
-                          isConnecting: isConnecting,
-                          onConfigSelected: (config) async {
-                            await provider.selectConfig(config);
-                          },
-                        );
+                        // Check if already connected to VPN
+                        if (provider.activeConfig != null) {
+                          // Show popup to inform user to disconnect first
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Connection Active'),
+                              content: const Text('Please disconnect from VPN before selecting a different server.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+                        } else {
+                          // Not connected, show server selector
+                          showServerSelector(
+                            context: context,
+                            configs: configs,
+                            selectedConfig: selectedConfig,
+                            isConnecting: isConnecting,
+                            onConfigSelected: (config) async {
+                              await provider.selectConfig(config);
+                            },
+                          );
+                        }
                       },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

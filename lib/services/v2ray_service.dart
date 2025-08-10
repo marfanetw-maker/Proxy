@@ -282,57 +282,7 @@ class V2RayService extends ChangeNotifier {
     }
   }
 
-  Future<int> getServerDelay(V2RayConfig config) async {
-    int retryCount = 0;
-    const maxRetries = 2;
-    final String serverRemark = config.remark;
-    final String serverAddress = config.address;
-    final int serverPort = config.port;
-    final String configType = config.configType;
-    
-    print('Testing ping for server: $serverRemark ($serverAddress:$serverPort) [$configType]');
-    
-    while (retryCount <= maxRetries) {
-      try {
-        await initialize();
-        V2RayURL parser = FlutterV2ray.parseFromURL(config.fullConfig);
-        
-        print('Attempt ${retryCount + 1}/$maxRetries: Getting delay for $serverRemark...');
-        final delay = await _flutterV2ray.getServerDelay(config: parser.getFullConfiguration());
-        
-        // Handle null delay value properly
-        final result = delay ?? -1;
-        print('Server delay for $serverRemark: $result ms');
-        
-        if (result >= 0) {
-          print('Ping successful for $serverRemark');
-        } else {
-          print('Ping failed for $serverRemark with result: $result');
-        }
-        
-        return result;
-      } catch (e) {
-        final errorMsg = e.toString();
-        print('Error getting server delay for $serverRemark (attempt ${retryCount + 1}): $errorMsg');
-        
-        // If this is a "closed pipe" error, wait a bit and retry
-        if (errorMsg.contains('closed pipe') && retryCount < maxRetries) {
-          retryCount++;
-          final waitTime = 500 * retryCount;
-          print('Retrying in $waitTime ms...');
-          // Wait before retrying
-          await Future.delayed(Duration(milliseconds: waitTime));
-        } else {
-          // If it's not a "closed pipe" error or we've reached max retries, return failure
-          print('Giving up on ping for $serverRemark after ${retryCount + 1} attempts');
-          return -1;
-        }
-      }
-    }
-    
-    print('All retry attempts exhausted for $serverRemark');
-    return -1; // Fallback in case loop exits unexpectedly
-  }
+  // Removed getServerDelay method as requested
 
   Future<List<V2RayConfig>> parseSubscriptionUrl(String url) async {
     try {
@@ -498,50 +448,7 @@ class V2RayService extends ChangeNotifier {
     }
   }
 
-  // Public method to get the delay of the currently connected server
-  Future<int> getConnectedServerDelay() async {
-    int retryCount = 0;
-    const maxRetries = 2;
-    
-    print('Testing ping for currently connected server...');
-    
-    while (retryCount <= maxRetries) {
-      try {
-        print('Attempt ${retryCount + 1}/$maxRetries: Getting delay for connected server...');
-        final delay = await _flutterV2ray.getConnectedServerDelay();
-        final result = delay ?? -1;
-        
-        print('Connected server delay: $result ms');
-        
-        if (result >= 0) {
-          print('Ping successful for connected server');
-        } else {
-          print('Ping failed for connected server with result: $result');
-        }
-        
-        return result;
-      } catch (e) {
-        final errorMsg = e.toString();
-        print('Error getting connected server delay (attempt ${retryCount + 1}): $errorMsg');
-        
-        // If this is a "closed pipe" error, wait a bit and retry
-        if (errorMsg.contains('closed pipe') && retryCount < maxRetries) {
-          retryCount++;
-          final waitTime = 500 * retryCount;
-          print('Retrying in $waitTime ms...');
-          // Wait before retrying
-          await Future.delayed(Duration(milliseconds: waitTime));
-        } else {
-          // If it's not a "closed pipe" error or we've reached max retries, return failure
-          print('Giving up on ping for connected server after ${retryCount + 1} attempts');
-          return -1;
-        }
-      }
-    }
-    
-    print('All retry attempts exhausted for connected server');
-    return -1; // Fallback in case loop exits unexpectedly
-  }
+  // Removed getConnectedServerDelay method as requested
   
   // Fetch IP information from ipwho.is API
   Future<IpInfo> fetchIpInfo() async {

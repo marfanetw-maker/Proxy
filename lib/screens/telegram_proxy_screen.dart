@@ -207,24 +207,46 @@ class _TelegramProxyScreenState extends State<TelegramProxyScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.copy),
-                  label: const Text('Copy'),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(
-                      text: 'Server: ${proxy.host}\nPort: ${proxy.port}\nSecret: ${proxy.secret}',
-                    ));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Proxy details copied to clipboard')),
-                    );
-                  },
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.copy),
+                        label: const Text('Copy Details'),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(
+                            text: 'Server: ${proxy.host}\nPort: ${proxy.port}\nSecret: ${proxy.secret}',
+                          ));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Proxy details copied to clipboard')),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.link),
+                        label: const Text('Copy URL'),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(
+                            text: proxy.telegramHttpsUrl,
+                          ));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Telegram HTTPS URL copied to clipboard')),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.telegram),
-                  label: const Text('Connect'),
+                  label: const Text('Connect to Telegram'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryGreen,
                   ),
@@ -251,9 +273,9 @@ class _TelegramProxyScreenState extends State<TelegramProxyScreen> {
   }
 
   Color _getPingColor(int ping) {
-    if (ping < 100) {
+    if (ping < 300) {
       return Colors.green;
-    } else if (ping < 300) {
+    } else if (ping < 500) {
       return Colors.orange;
     } else {
       return Colors.red;

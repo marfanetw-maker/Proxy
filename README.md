@@ -13,9 +13,7 @@ Proxy Cloud is an open-source Flutter application that provides a user-friendly 
 ### V2Ray VPN
 - Connect to V2Ray servers with a single tap
 - Import configurations via subscription URLs
-- Manage multiple server configurations
 - Monitor connection status
-- Auto-reconnect functionality
 
 ### Telegram Proxies
 - Browse and connect to MTProto proxies

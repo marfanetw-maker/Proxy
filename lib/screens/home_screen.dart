@@ -124,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title: const Text('Proxy Cloud'),
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: false,
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),

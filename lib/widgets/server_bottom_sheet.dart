@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/v2ray_config.dart';
 import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
@@ -16,6 +17,8 @@ class ServerBottomSheet extends StatelessWidget {
     required this.isConnecting,
     required this.onConfigSelected,
   }) : super(key: key);
+  
+  // Removed ping indicator method as requested
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +56,14 @@ class ServerBottomSheet extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
+                Row(
+                  children: [
+                    // Close button only
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -98,9 +106,32 @@ class ServerBottomSheet extends StatelessWidget {
                   onTap: isConnecting
                       ? null
                       : () async {
-                          await onConfigSelected(config);
-                          Navigator.pop(context);
+                          // Get the provider to check connection status
+                          final provider = Provider.of<V2RayProvider>(context, listen: false);
+                          
+                          // Check if already connected to VPN
+                          if (provider.activeConfig != null) {
+                            // Show popup to inform user to disconnect first
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Connection Active'),
+                                content: const Text('Please disconnect from VPN before selecting a different server.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            // Not connected, proceed with selection
+                            await onConfigSelected(config);
+                            Navigator.pop(context);
+                          }
                         },
+                  // Removed onLongPress handler for server pinging as requested
                 );
               },
             ),
@@ -120,6 +151,29 @@ void showServerSelector({
   required bool isConnecting,
   required Future<void> Function(V2RayConfig) onConfigSelected,
 }) {
+  // Get the provider to check connection status
+  final provider = Provider.of<V2RayProvider>(context, listen: false);
+  
+  // Check if already connected to VPN
+  if (provider.activeConfig != null) {
+    // Show popup to inform user to disconnect first
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Connection Active'),
+        content: const Text('Please disconnect from VPN before selecting a different server.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    return; // Don't show the bottom sheet
+  }
+  
+  // Not connected, show server selector
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,

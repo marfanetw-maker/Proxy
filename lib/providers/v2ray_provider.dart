@@ -164,15 +164,25 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
     
     try {
+      // Fetch servers from service
       final servers = await _serverService.fetchServers(customUrl: customUrl);
+      
       if (servers.isNotEmpty) {
+        // Load and display servers immediately
         _configs = servers;
+        
+        // Save configs and update UI immediately to show servers
         await _v2rayService.saveConfigs(_configs);
+        
+        // Mark loading as complete
+        _isLoadingServers = false;
+        notifyListeners();
+        
+        // Server delay functionality removed as requested
       } else {
         // If no servers found online, try to load from local storage
         _configs = await _v2rayService.loadConfigs();
       }
-      notifyListeners();
     } catch (e) {
       _setError('Failed to fetch servers: $e');
       // Try to load from local storage as fallback
@@ -197,7 +207,10 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> addConfig(V2RayConfig config) async {
+    // Add config and display it immediately
     _configs.add(config);
+    
+    // Save the configuration immediately to display it
     await _v2rayService.saveConfigs(_configs);
     notifyListeners();
   }
@@ -230,8 +243,19 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         return;
       }
       
-      // Add configs
+      // Add configs and display them immediately
       _configs.addAll(configs);
+      
+      // Save configs and update UI immediately to show servers
+      await _v2rayService.saveConfigs(_configs);
+      _setLoading(false);
+      notifyListeners();
+      
+      final newConfigIds = configs.map((c) => c.id).toList();
+      
+      // Server delay functionality removed as requested
+      
+      // Save configs
       await _v2rayService.saveConfigs(_configs);
       
       // Create subscription
@@ -240,13 +264,11 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         name: name,
         url: url,
         lastUpdated: DateTime.now(),
-        configIds: configs.map((c) => c.id).toList(),
+        configIds: newConfigIds,
       );
       
       _subscriptions.add(subscription);
       await _v2rayService.saveSubscriptions(_subscriptions);
-      
-      notifyListeners();
     } catch (e) {
       _setError('Failed to add subscription: $e');
     } finally {
@@ -256,32 +278,44 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> updateSubscription(Subscription subscription) async {
     _setLoading(true);
+    _isLoadingServers = true;
     _errorMessage = '';
+    notifyListeners();
+    
     try {
       final configs = await _v2rayService.parseSubscriptionUrl(subscription.url);
       if (configs.isEmpty) {
         _setError('No valid configurations found in subscription');
+        _isLoadingServers = false;
+        notifyListeners();
         return;
       }
       
       // Remove old configs
       _configs.removeWhere((c) => subscription.configIds.contains(c.id));
       
-      // Add new configs
+      // Add new configs and display them immediately
       _configs.addAll(configs);
+      
+      // Save configs and update UI immediately to show servers
       await _v2rayService.saveConfigs(_configs);
+      
+      // Mark loading as complete
+      _isLoadingServers = false;
+      _setLoading(false);
+      notifyListeners();
+      
+      final newConfigIds = configs.map((c) => c.id).toList();
       
       // Update subscription
       final index = _subscriptions.indexWhere((s) => s.id == subscription.id);
       if (index != -1) {
         _subscriptions[index] = subscription.copyWith(
           lastUpdated: DateTime.now(),
-          configIds: configs.map((c) => c.id).toList(),
+          configIds: newConfigIds,
         );
         await _v2rayService.saveSubscriptions(_subscriptions);
       }
-      
-      notifyListeners();
     } catch (e) {
       _setError('Failed to update subscription: $e');
     } finally {
@@ -368,130 +402,9 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<int> testServerDelay(V2RayConfig config) async {
-    try {
-      final delay = await _v2rayService.getServerDelay(config);
-      if (delay >= 0) {
-        // Clear any previous error messages if successful
-        clearError();
-      } else {
-        // Set a user-friendly error message for failed pings
-        _setError('Could not ping server ${config.remark}. Server may be offline or unreachable.');
-      }
-      return delay;
-    } catch (e) {
-      String errorMessage = 'Error testing server delay';
-      
-      // Provide more specific error messages based on error type
-      if (e.toString().contains('closed pipe')) {
-        errorMessage = 'Connection to ${config.remark} was interrupted. Please try again.';
-      } else if (e.toString().contains('timeout')) {
-        errorMessage = 'Connection to ${config.remark} timed out. Server may be slow or unreachable.';
-      } else if (e.toString().contains('network is unreachable')) {
-        errorMessage = 'Network is unreachable. Please check your internet connection.';
-      } else {
-        // Include the actual error for debugging
-        errorMessage = '$errorMessage: $e';
-      }
-      
-      _setError(errorMessage);
-      return -1;
-    }
-  }
+  // Removed testServerDelay method as requested
   
-  // Method to ping a server and display the result
-  Future<void> pingServer(V2RayConfig? config) async {
-    if (config == null) return;
-    
-    _errorMessage = 'Pinging server...';
-    notifyListeners();
-    
-    try {
-      int delay;
-      if (_v2rayService.activeConfig != null && _v2rayService.activeConfig!.id == config.id) {
-        // If this is the connected server, use getConnectedServerDelay
-        delay = await _v2rayService.getConnectedServerDelay();
-      } else {
-        // Otherwise use regular getServerDelay
-        delay = await _v2rayService.getServerDelay(config);
-      }
-      
-      if (delay >= 0) {
-        _errorMessage = 'Ping: ${config.remark} - ${delay}ms';
-      } else {
-        _errorMessage = 'Failed to ping ${config.remark}';
-      }
-      notifyListeners();
-      
-      // Clear the message after 2 seconds
-      Future.delayed(const Duration(seconds: 2), () {
-        _errorMessage = '';
-        notifyListeners();
-      });
-    } catch (e) {
-      _errorMessage = 'Error pinging server: $e';
-      notifyListeners();
-      
-      // Clear the error message after 2 seconds
-      Future.delayed(const Duration(seconds: 2), () {
-        _errorMessage = '';
-        notifyListeners();
-      });
-    }
-  }
-  
-  // Method to ping all servers and display results
-  Future<void> pingAllServers() async {
-    if (_configs.isEmpty) {
-      _errorMessage = 'No servers to ping';
-      notifyListeners();
-      return;
-    }
-    
-    _setLoading(true);
-    _errorMessage = 'Pinging all servers...';
-    notifyListeners();
-    
-    try {
-      // Create a map to store server delays
-      final Map<String, int> delays = {};
-      
-      // Ping each server
-      for (var config in _configs) {
-        int delay;
-        if (_v2rayService.activeConfig != null && _v2rayService.activeConfig!.id == config.id) {
-          // If this is the active config, use the connected server delay method
-          delay = await _v2rayService.getConnectedServerDelay();
-        } else {
-          // Otherwise use the regular server delay method
-          delay = await _v2rayService.getServerDelay(config);
-        }
-        
-        delays[config.remark] = delay;
-      }
-      
-      // Build a message with all delays
-      final StringBuffer message = StringBuffer('Server Ping Results:\n');
-      delays.forEach((server, delay) {
-        message.write('$server: ${delay >= 0 ? "${delay}ms" : "Failed"}\n');
-      });
-      
-      _errorMessage = message.toString();
-      notifyListeners();
-      
-      // Clear the error message after 5 seconds
-      Future.delayed(const Duration(seconds: 5), () {
-        if (_errorMessage.contains('Server Ping Results')) {
-          _errorMessage = '';
-          notifyListeners();
-        }
-      });
-    } catch (e) {
-      _setError('Error pinging servers: $e');
-    } finally {
-      _setLoading(false);
-    }
-  }
+  // Removed pingServer and pingAllServers methods as requested
 
   Future<void> selectConfig(V2RayConfig config) async {
     _selectedConfig = config;
@@ -502,6 +415,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
 
   void _setLoading(bool loading) {
     _isLoading = loading;
+    _isLoadingServers = loading; // Update server loading state as well
     notifyListeners();
   }
 
