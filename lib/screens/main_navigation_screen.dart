@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import 'home_screen.dart';
 import 'telegram_proxy_screen.dart';
 import 'tools_screen.dart';
+import 'store_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({Key? key}) : super(key: key);
@@ -18,16 +19,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const TelegramProxyScreen(),
+    const StoreScreen(),
     const ToolsScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppTheme.primaryDark,
@@ -50,19 +49,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           elevation: 0,
           selectedItemColor: AppTheme.primaryGreen,
           unselectedItemColor: Colors.grey,
+          type: BottomNavigationBarType.fixed,
+          selectedFontSize: 12,
+          unselectedFontSize: 10,
+          iconSize: 24,
           items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.vpn_key),
-              label: 'VPN',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.telegram),
-              label: 'Proxy',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.build),
-              label: 'Tools',
-            ),
+            BottomNavigationBarItem(icon: Icon(Icons.vpn_key), label: 'VPN'),
+            BottomNavigationBarItem(icon: Icon(Icons.telegram), label: 'Proxy'),
+            BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Store'),
+            BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Tools'),
           ],
         ),
       ),

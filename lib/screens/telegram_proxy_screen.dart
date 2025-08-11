@@ -236,7 +236,7 @@ class _TelegramProxyScreenState extends State<TelegramProxyScreen> {
                             text: proxy.telegramHttpsUrl,
                           ));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Telegram HTTPS URL copied to clipboard')),
+                            const SnackBar(content: Text('Telegram Proxy URL copied to clipboard')),
                           );
                         },
                       ),

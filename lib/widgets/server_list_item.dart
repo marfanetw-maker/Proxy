@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/v2ray_config.dart';
+import '../models/subscription.dart';
 import '../providers/v2ray_provider.dart';
 
 class ServerListItem extends StatefulWidget {
@@ -98,16 +99,36 @@ class _ServerListItemState extends State<ServerListItem> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getConfigTypeColor(widget.config.configType),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      widget.config.configType.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getConfigTypeColor(widget.config.configType),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          widget.config.configType.toUpperCase(),
+                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _getSubscriptionName(context),
+                          style: const TextStyle(
+                            color: Colors.blueGrey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   if (isSelected)
                     ElevatedButton(
@@ -145,4 +166,20 @@ class _ServerListItemState extends State<ServerListItem> {
   }
 
   // Removed _getPingColor method
+
+  String _getSubscriptionName(BuildContext context) {
+    final provider = Provider.of<V2RayProvider>(context, listen: false);
+    final subscriptions = provider.subscriptions;
+    
+    // Find which subscription this config belongs to
+    String subscriptionName = 'Default';
+    for (var subscription in subscriptions) {
+      if (subscription.configIds.contains(widget.config.id)) {
+        subscriptionName = subscription.name;
+        break;
+      }
+    }
+    
+    return subscriptionName;
+  }
 }

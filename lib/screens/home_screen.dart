@@ -9,6 +9,7 @@ import '../widgets/error_snackbar.dart';
 import '../theme/app_theme.dart';
 import 'about_screen.dart';
 import '../services/v2ray_service.dart';
+import 'subscription_management_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -32,22 +33,31 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _showAddLicenseDialog(BuildContext context) async {
+  Future<void> _showAddSubscriptionDialog(BuildContext context) async {
+    final TextEditingController _nameController = TextEditingController(text: 'New Subscription');
+    
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Add License'),
+            title: const Text('Add Subscription'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Enter your subscription URL:'),
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Subscription Name',
+                  ),
+                ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _urlController,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    hintText: 'Subscription URL (can be empty)',
+                    labelText: 'Subscription URL',
+                    hintText: 'Enter subscription URL',
                   ),
                 ),
               ],
@@ -64,45 +74,44 @@ class _HomeScreenState extends State<HomeScreen> {
                     listen: false,
                   );
                   final url = _urlController.text.trim();
+                  final name = _nameController.text.trim();
+                  
+                  if (url.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a subscription URL')),
+                    );
+                    return;
+                  }
+                  
+                  if (name.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a subscription name')),
+                    );
+                    return;
+                  }
                   
                   Navigator.pop(context);
                   
                   // Show a loading snackbar
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(url.isNotEmpty ? 'Adding subscription...' : 'Using default servers...'),
-                      duration: const Duration(seconds: 2),
+                    const SnackBar(
+                      content: Text('Adding subscription...'),
+                      duration: Duration(seconds: 2),
                     ),
                   );
                   
                   try {
-                    if (url.isNotEmpty) {
-                      // Save the subscription URL to SharedPreferences as default
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setString('default_subscription_url', url);
-                      
-                      // Remove all existing subscriptions and their configs
-                      for (var subscription in provider.subscriptions) {
-                        await provider.removeSubscription(subscription);
-                      }
-                      
-                      // Add subscription with URL
-                      await provider.addSubscription('Default Subscription', url);
-                      
-                      // Check if there was an error
-                      if (provider.errorMessage.isNotEmpty) {
-                        ErrorSnackbar.show(context, provider.errorMessage);
-                        provider.clearError();
-                      }
+                    // Add subscription with URL
+                    await provider.addSubscription(name, url);
+                    
+                    // Check if there was an error
+                    if (provider.errorMessage.isNotEmpty) {
+                      ErrorSnackbar.show(context, provider.errorMessage);
+                      provider.clearError();
                     } else {
-                      // Use default URL if empty
-                      await provider.fetchServers();
-                      
-                      // Check if there was an error
-                      if (provider.errorMessage.isNotEmpty) {
-                        ErrorSnackbar.show(context, provider.errorMessage);
-                        provider.clearError();
-                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Subscription added successfully')),
+                      );
                     }
                   } catch (e) {
                     ErrorSnackbar.show(context, 'Error: ${e.toString()}');
@@ -128,22 +137,44 @@ class _HomeScreenState extends State<HomeScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () {
+              onPressed: () async {
                 final provider = Provider.of<V2RayProvider>(
                   context,
                   listen: false,
                 );
-                provider.fetchServers();
+                
+                // Show loading indicator
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Updating all subscriptions...')),
+                );
+                
+                // Update all subscriptions instead of just fetching servers
+                await provider.updateAllSubscriptions();
                 provider.fetchNotificationStatus();
+                
+                // Show success message
+                if (provider.errorMessage.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('All subscriptions updated successfully')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(provider.errorMessage)),
+                  );
+                  provider.clearError();
+                }
               },
-              tooltip: 'Refresh',
+              tooltip: 'Update All Subscriptions',
             ),
             IconButton(
               icon: const Icon(Icons.vpn_key),
               onPressed: () {
-                _showAddLicenseDialog(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SubscriptionManagementScreen()),
+                );
               },
-              tooltip: 'Add License',
+              tooltip: 'Add Subscription',
             ),
             IconButton(
               icon: const Icon(Icons.info_outline),

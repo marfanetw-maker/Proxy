@@ -4,6 +4,7 @@ import '../services/v2ray_service.dart';
 import 'ip_info_screen.dart';
 import 'host_checker_screen.dart';
 import 'speedtest_screen.dart';
+import 'subscription_management_screen.dart';
 
 class ToolsScreen extends StatelessWidget {
   const ToolsScreen({Key? key}) : super(key: key);
@@ -20,6 +21,20 @@ class ToolsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          _buildToolCard(
+            context,
+            title: 'Subscription Manager',
+            description: 'Add, edit, delete and update your V2Ray subscriptions',
+            icon: Icons.subscriptions,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SubscriptionManagementScreen(),
+                ),
+              );
+            },
+          ),
           _buildToolCard(
             context,
             title: 'IP Information',

@@ -282,9 +282,13 @@ class V2RayService extends ChangeNotifier {
 
   Future<List<V2RayConfig>> parseSubscriptionUrl(String url) async {
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url))
+          .timeout(const Duration(seconds: 15), onTimeout: () {
+        throw Exception('Network timeout: Check your internet connection');
+      });
+      
       if (response.statusCode != 200) {
-        throw Exception('Failed to load subscription');
+        throw Exception('Failed to load subscription: HTTP ${response.statusCode}');
       }
 
       final List<V2RayConfig> configs = [];
@@ -343,10 +347,28 @@ class V2RayService extends ChangeNotifier {
         }
       }
 
+      if (configs.isEmpty) {
+        throw Exception('No valid configurations found in subscription');
+      }
+      
       return configs;
     } catch (e) {
       print('Error parsing subscription: $e');
-      return [];
+      
+      // Provide more specific error messages based on exception type
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Connection refused') ||
+          e.toString().contains('Network is unreachable')) {
+        throw Exception('Network error: Check your internet connection');
+      } else if (e.toString().contains('timeout')) {
+        throw Exception('Connection timeout: Server is not responding');
+      } else if (e.toString().contains('Invalid URL')) {
+        throw Exception('Invalid subscription URL format');
+      } else if (e.toString().contains('No valid configurations')) {
+        throw Exception('No valid servers found in subscription');
+      } else {
+        throw Exception('Failed to update subscription: ${e.toString()}');
+      }
     }
   }
 

@@ -42,6 +42,9 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         _handleNotificationDisconnect();
       });
       
+      // Load configurations first
+      await loadConfigs();
+      
       // Load subscriptions
       await loadSubscriptions();
       
@@ -53,31 +56,40 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         // If we have a default subscription URL, load it
         print('Loading default subscription URL: $defaultSubscriptionUrl');
         
-        // If we don't have any subscriptions or the URL is different from existing ones
-        bool shouldAddSubscription = true;
+        // Check for any subscriptions named 'Default Subscription'
+        List<Subscription> defaultSubscriptions = _subscriptions
+            .where((sub) => sub.name == 'Default Subscription' || sub.name == 'Default')
+            .toList();
         
-        if (_subscriptions.isNotEmpty) {
-          // Check if we already have this subscription
-          for (var subscription in _subscriptions) {
-            if (subscription.url == defaultSubscriptionUrl) {
-              // We already have this subscription, just update it
-              await updateSubscription(subscription);
-              shouldAddSubscription = false;
-              break;
-            }
+        // If we have any default subscriptions
+        if (defaultSubscriptions.isNotEmpty) {
+          // Keep only the first one and remove all others
+          Subscription defaultSubscription = defaultSubscriptions.first;
+          
+          // Remove all other default subscriptions
+          for (int i = 1; i < defaultSubscriptions.length; i++) {
+            await removeSubscription(defaultSubscriptions[i]);
           }
           
-          // If we have other subscriptions but not this one, remove them and add this one
-          if (shouldAddSubscription) {
-            // Remove all existing subscriptions
-            for (var subscription in List<Subscription>.from(_subscriptions)) {
-              await removeSubscription(subscription);
-            }
+          // Ensure the name is consistent
+          if (defaultSubscription.name != 'Default Subscription') {
+            defaultSubscription = defaultSubscription.copyWith(name: 'Default Subscription');
+            await updateSubscriptionInfo(defaultSubscription);
           }
-        }
-        
-        // Add the default subscription if needed
-        if (shouldAddSubscription) {
+          
+          // Update URL if needed
+          if (defaultSubscription.url != defaultSubscriptionUrl) {
+            final updatedSubscription = defaultSubscription.copyWith(
+              url: defaultSubscriptionUrl
+            );
+            await updateSubscriptionInfo(updatedSubscription);
+            await updateSubscription(updatedSubscription);
+          } else {
+            // URL is the same, just update the subscription
+            await updateSubscription(defaultSubscription);
+          }
+        } else {
+          // No default subscription found, add one
           await addSubscription('Default Subscription', defaultSubscriptionUrl);
         }
       } else {
@@ -198,6 +210,32 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     _setLoading(true);
     try {
       _subscriptions = await _v2rayService.loadSubscriptions();
+      
+      // Ensure configs are loaded and match subscription config IDs
+      if (_configs.isEmpty) {
+        _configs = await _v2rayService.loadConfigs();
+      }
+      
+      // Verify that all subscription config IDs exist in the configs list
+      // If not, it means the configs weren't properly saved or loaded
+      for (var subscription in _subscriptions) {
+        final configIds = subscription.configIds;
+        final existingConfigIds = _configs.map((c) => c.id).toSet();
+        
+        // Check if any config IDs in the subscription are missing from the configs list
+        final missingConfigIds = configIds.where((id) => !existingConfigIds.contains(id)).toList();
+        
+        if (missingConfigIds.isNotEmpty) {
+          print('Warning: Found ${missingConfigIds.length} missing configs for subscription ${subscription.name}');
+          // Update the subscription to remove missing config IDs
+          final updatedConfigIds = configIds.where((id) => existingConfigIds.contains(id)).toList();
+          final index = _subscriptions.indexWhere((s) => s.id == subscription.id);
+          if (index != -1) {
+            _subscriptions[index] = subscription.copyWith(configIds: updatedConfigIds);
+          }
+        }
+      }
+      
       notifyListeners();
     } catch (e) {
       _setError('Failed to load subscriptions: $e');
@@ -246,17 +284,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       // Add configs and display them immediately
       _configs.addAll(configs);
       
-      // Save configs and update UI immediately to show servers
-      await _v2rayService.saveConfigs(_configs);
-      _setLoading(false);
-      notifyListeners();
-      
       final newConfigIds = configs.map((c) => c.id).toList();
-      
-      // Server delay functionality removed as requested
-      
-      // Save configs
-      await _v2rayService.saveConfigs(_configs);
       
       // Create subscription
       final subscription = Subscription(
@@ -268,9 +296,32 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       );
       
       _subscriptions.add(subscription);
+      
+      // Save both configs and subscription
+      await _v2rayService.saveConfigs(_configs);
       await _v2rayService.saveSubscriptions(_subscriptions);
+      
+      // Update UI after everything is saved
+      notifyListeners();
     } catch (e) {
-      _setError('Failed to add subscription: $e');
+      String errorMsg = 'Failed to add subscription';
+      
+      // Provide more specific error messages
+      if (e.toString().contains('Network error') || 
+          e.toString().contains('timeout') || 
+          e.toString().contains('SocketException')) {
+        errorMsg = 'Network error: Check your internet connection';
+      } else if (e.toString().contains('Invalid URL')) {
+        errorMsg = 'Invalid subscription URL format';
+      } else if (e.toString().contains('No valid servers')) {
+        errorMsg = 'No valid servers found in subscription';
+      } else if (e.toString().contains('HTTP')) {
+        errorMsg = 'Server error: ${e.toString()}';
+      } else {
+        errorMsg = 'Failed to add subscription: ${e.toString()}';
+      }
+      
+      _setError(errorMsg);
     } finally {
       _setLoading(false);
     }
@@ -297,14 +348,6 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       // Add new configs and display them immediately
       _configs.addAll(configs);
       
-      // Save configs and update UI immediately to show servers
-      await _v2rayService.saveConfigs(_configs);
-      
-      // Mark loading as complete
-      _isLoadingServers = false;
-      _setLoading(false);
-      notifyListeners();
-      
       final newConfigIds = configs.map((c) => c.id).toList();
       
       // Update subscription
@@ -314,12 +357,145 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
           lastUpdated: DateTime.now(),
           configIds: newConfigIds,
         );
+        
+        // Save both configs and subscriptions to ensure persistence
+        await _v2rayService.saveConfigs(_configs);
         await _v2rayService.saveSubscriptions(_subscriptions);
       }
+      
+      // Mark loading as complete
+      _isLoadingServers = false;
+      _setLoading(false);
+      notifyListeners();
     } catch (e) {
-      _setError('Failed to update subscription: $e');
+      String errorMsg = 'Failed to update subscription';
+      
+      // Provide more specific error messages
+      if (e.toString().contains('Network error') || 
+          e.toString().contains('timeout') || 
+          e.toString().contains('SocketException')) {
+        errorMsg = 'Network error: Check your internet connection';
+      } else if (e.toString().contains('Invalid URL')) {
+        errorMsg = 'Invalid subscription URL format';
+      } else if (e.toString().contains('No valid servers')) {
+        errorMsg = 'No valid servers found in subscription';
+      } else if (e.toString().contains('HTTP')) {
+        errorMsg = 'Server error: ${e.toString()}';
+      } else {
+        errorMsg = 'Failed to update subscription: ${e.toString()}';
+      }
+      
+      _setError(errorMsg);
     } finally {
       _setLoading(false);
+    }
+  }
+  
+  // Update subscription info without refreshing servers
+  Future<void> updateSubscriptionInfo(Subscription subscription) async {
+    _setLoading(true);
+    _errorMessage = '';
+    
+    try {
+      // Find and update the subscription
+      final index = _subscriptions.indexWhere((s) => s.id == subscription.id);
+      if (index != -1) {
+        _subscriptions[index] = subscription;
+        await _v2rayService.saveSubscriptions(_subscriptions);
+        notifyListeners();
+      } else {
+        _setError('Subscription not found');
+      }
+    } catch (e) {
+      String errorMsg = 'Failed to update subscription info';
+      
+      // Provide more specific error messages
+      if (e.toString().contains('Network error') || 
+          e.toString().contains('timeout') || 
+          e.toString().contains('SocketException')) {
+        errorMsg = 'Network error: Check your internet connection';
+      } else if (e.toString().contains('Invalid URL')) {
+        errorMsg = 'Invalid subscription URL format';
+      } else if (e.toString().contains('Permission')) {
+        errorMsg = 'Permission error: Unable to save subscription';
+      } else {
+        errorMsg = 'Failed to update subscription info: ${e.toString()}';
+      }
+      
+      _setError(errorMsg);
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Update all subscriptions
+  Future<void> updateAllSubscriptions() async {
+    _setLoading(true);
+    _errorMessage = '';
+    _isLoadingServers = true;
+    notifyListeners();
+    
+    try {
+      // Make a copy to avoid modification during iteration
+      final subscriptionsCopy = List<Subscription>.from(_subscriptions);
+      bool anyUpdated = false;
+      List<String> failedSubscriptions = [];
+      
+      for (final subscription in subscriptionsCopy) {
+        try {
+          // Skip empty or invalid subscriptions
+          if (subscription.url.isEmpty) continue;
+          
+          final configs = await _v2rayService.parseSubscriptionUrl(subscription.url);
+          
+          // Remove old configs for this subscription
+          _configs.removeWhere((c) => subscription.configIds.contains(c.id));
+          
+          // Add new configs
+          _configs.addAll(configs);
+          
+          final newConfigIds = configs.map((c) => c.id).toList();
+          
+          // Update subscription
+          final index = _subscriptions.indexWhere((s) => s.id == subscription.id);
+          if (index != -1) {
+            _subscriptions[index] = subscription.copyWith(
+              lastUpdated: DateTime.now(),
+              configIds: newConfigIds,
+            );
+            anyUpdated = true;
+          }
+        } catch (e) {
+          // Record failed subscription
+          failedSubscriptions.add(subscription.name);
+          print('Error updating subscription ${subscription.name}: $e');
+        }
+      }
+      
+      // Save all changes at once to reduce disk operations
+      if (anyUpdated) {
+        await _v2rayService.saveConfigs(_configs);
+        await _v2rayService.saveSubscriptions(_subscriptions);
+      }
+      
+      // Set error message if any subscriptions failed
+      if (failedSubscriptions.isNotEmpty) {
+        if (failedSubscriptions.length == _subscriptions.length) {
+          // All subscriptions failed - likely a network issue
+          _setError('Failed to update subscriptions: Network error or invalid URLs');
+        } else {
+          // Some subscriptions failed
+          _setError('Failed to update: ${failedSubscriptions.join(', ')}');
+        }
+      }
+      
+      _isLoadingServers = false;
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to update all subscriptions: $e');
+    } finally {
+      _setLoading(false);
+      _isLoadingServers = false;
     }
   }
 
