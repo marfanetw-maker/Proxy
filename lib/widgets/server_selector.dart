@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/v2ray_config.dart';
 import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
-import 'server_bottom_sheet.dart';
+import '../screens/server_selection_screen.dart';
 import 'error_snackbar.dart';
 
 class ServerSelector extends StatelessWidget {
@@ -89,8 +89,8 @@ class ServerSelector extends StatelessWidget {
                             ),
                           );
                         } else {
-                          // Not connected, show server selector
-                          showServerSelector(
+                          // Not connected, show server selector as full page
+                          showServerSelectionScreen(
                             context: context,
                             configs: configs,
                             selectedConfig: selectedConfig,

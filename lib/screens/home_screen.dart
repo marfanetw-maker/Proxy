@@ -260,20 +260,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildIpInfoRow(IpInfo ipInfo) {
     return Row(
       children: [
-        ipInfo.flagUrl.isNotEmpty
-            ? Image.network(
-                ipInfo.flagUrl,
-                width: 24,
-                height: 24,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.public, size: 18, color: AppTheme.textGrey);
-                },
-              )
-            : const Icon(Icons.public, size: 18, color: AppTheme.textGrey),
+        const Icon(Icons.public, size: 18, color: AppTheme.textGrey),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            '${ipInfo.country} - ${ipInfo.ip}',
+            '${ipInfo.country} - ${ipInfo.city}',
             style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryGreen),
             overflow: TextOverflow.ellipsis,
           ),

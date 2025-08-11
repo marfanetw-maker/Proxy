@@ -4,6 +4,7 @@ import '../providers/telegram_proxy_provider.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
 import 'telegram_proxy_screen.dart';
+import 'tools_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({Key? key}) : super(key: key);
@@ -17,6 +18,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const TelegramProxyScreen(),
+    const ToolsScreen(),
   ];
 
   @override
@@ -56,6 +58,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.telegram),
               label: 'Proxy',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.build),
+              label: 'Tools',
             ),
           ],
         ),

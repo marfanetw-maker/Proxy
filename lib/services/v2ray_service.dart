@@ -14,47 +14,43 @@ import 'package:flutter/foundation.dart';
 class IpInfo {
   final String ip;
   final String country;
-  final String flagUrl;
+  final String city;
+  final String countryCode;
   final bool success;
   final String? errorMessage;
 
   IpInfo({
     required this.ip,
     required this.country,
-    required this.flagUrl,
+    required this.city,
+    required this.countryCode,
     required this.success,
     this.errorMessage,
   });
 
   factory IpInfo.fromJson(Map<String, dynamic> json) {
-    if (json['success'] == true) {
-      return IpInfo(
-        ip: json['ip'] ?? '',
-        country: json['country'] ?? '',
-        flagUrl: json['flag']?['img'] ?? '',
-        success: true,
-        errorMessage: null,
-      );
-    } else {
-      return IpInfo(
-        ip: '',
-        country: '',
-        flagUrl: '',
-        success: false,
-        errorMessage: json['message'] ?? 'Unknown error',
-      );
-    }
+    return IpInfo(
+      ip: json['ip'] ?? '',
+      country: json['country_name'] ?? '',
+      city: json['city_name'] ?? '',
+      countryCode: json['country_code'] ?? '',
+      success: true,
+      errorMessage: null,
+    );
   }
 
   factory IpInfo.error(String message) {
     return IpInfo(
       ip: '',
       country: '',
-      flagUrl: '',
+      city: '',
+      countryCode: '',
       success: false,
       errorMessage: message,
     );
   }
+  
+  String get locationString => '$country - $city';
 }
 
 class V2RayService extends ChangeNotifier {
@@ -450,13 +446,13 @@ class V2RayService extends ChangeNotifier {
 
   // Removed getConnectedServerDelay method as requested
   
-  // Fetch IP information from ipwho.is API
+  // Fetch IP information from ipleak.net API
   Future<IpInfo> fetchIpInfo() async {
     // Set loading state
     _isLoadingIpInfo = true;
     notifyListeners();
     
-    const String apiUrl = 'https://ipwho.is/';
+    const String apiUrl = 'https://ipleak.net/json/';
     int retryCount = 0;
     const int maxRetries = 5;
     
@@ -470,27 +466,11 @@ class V2RayService extends ChangeNotifier {
             final Map<String, dynamic> data = json.decode(response.body);
             final ipInfo = IpInfo.fromJson(data);
             
-            if (ipInfo.success) {
-              _ipInfo = ipInfo;
-              _isLoadingIpInfo = false;
-              notifyListeners();
-              print('IP info fetched successfully: ${ipInfo.ip} - ${ipInfo.country}');
-              return ipInfo;
-            } else {
-              // If we get a monthly limit error, retry
-              if (ipInfo.errorMessage?.contains('monthly limit') == true) {
-                print('Monthly limit reached, retrying...');
-                retryCount++;
-                await Future.delayed(const Duration(seconds: 1));
-                continue;
-              } else {
-                _ipInfo = ipInfo;
-                _isLoadingIpInfo = false;
-                notifyListeners();
-                print('IP info error: ${ipInfo.errorMessage}');
-                return ipInfo;
-              }
-            }
+            _ipInfo = ipInfo;
+            _isLoadingIpInfo = false;
+            notifyListeners();
+            print('IP info fetched successfully: ${ipInfo.ip} - ${ipInfo.locationString}');
+            return ipInfo;
           } else {
             print('HTTP error: ${response.statusCode}');
             retryCount++;
@@ -504,7 +484,7 @@ class V2RayService extends ChangeNotifier {
       }
       
       // After max retries, return error
-      final errorInfo = IpInfo.error('cant get ip');
+      final errorInfo = IpInfo.error('Cannot get IP information');
       _ipInfo = errorInfo;
       _isLoadingIpInfo = false;
       notifyListeners();
