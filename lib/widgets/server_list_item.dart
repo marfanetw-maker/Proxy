@@ -156,8 +156,6 @@ class _ServerListItemState extends State<ServerListItem> {
         return Colors.blue;
       case 'vless':
         return Colors.green;
-      case 'trojan':
-        return Colors.purple;
       case 'shadowsocks':
         return Colors.orange;
       default:

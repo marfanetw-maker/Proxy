@@ -61,6 +61,25 @@ class _SubscriptionManagementScreenState extends State<SubscriptionManagementScr
       return;
     }
     
+    // Check if name is 'Default' or 'default'
+    if (name.toLowerCase() == 'default') {
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppTheme.secondaryDark,
+          title: const Text('Reserved Name'),
+          content: const Text('The name "Default" is reserved for system use. Please choose a different name.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK', style: TextStyle(color: AppTheme.primaryGreen)),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
     final provider = Provider.of<V2RayProvider>(context, listen: false);
     
     // Check for duplicate name when adding a new subscription
@@ -255,7 +274,7 @@ class _SubscriptionManagementScreenState extends State<SubscriptionManagementScr
     return Scaffold(
       backgroundColor: AppTheme.primaryDark,
       appBar: AppBar(
-        title: const Text('Manage Subscriptions'),
+        title: const Text('Manage Subs'),
         backgroundColor: AppTheme.primaryDark,
         elevation: 0,
         actions: [

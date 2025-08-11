@@ -48,54 +48,8 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       // Load subscriptions
       await loadSubscriptions();
       
-      // Check if we have a default subscription URL saved
-      final prefs = await SharedPreferences.getInstance();
-      final defaultSubscriptionUrl = prefs.getString('default_subscription_url');
-      
-      if (defaultSubscriptionUrl != null && defaultSubscriptionUrl.isNotEmpty) {
-        // If we have a default subscription URL, load it
-        print('Loading default subscription URL: $defaultSubscriptionUrl');
-        
-        // Check for any subscriptions named 'Default Subscription'
-        List<Subscription> defaultSubscriptions = _subscriptions
-            .where((sub) => sub.name == 'Default Subscription' || sub.name == 'Default')
-            .toList();
-        
-        // If we have any default subscriptions
-        if (defaultSubscriptions.isNotEmpty) {
-          // Keep only the first one and remove all others
-          Subscription defaultSubscription = defaultSubscriptions.first;
-          
-          // Remove all other default subscriptions
-          for (int i = 1; i < defaultSubscriptions.length; i++) {
-            await removeSubscription(defaultSubscriptions[i]);
-          }
-          
-          // Ensure the name is consistent
-          if (defaultSubscription.name != 'Default Subscription') {
-            defaultSubscription = defaultSubscription.copyWith(name: 'Default Subscription');
-            await updateSubscriptionInfo(defaultSubscription);
-          }
-          
-          // Update URL if needed
-          if (defaultSubscription.url != defaultSubscriptionUrl) {
-            final updatedSubscription = defaultSubscription.copyWith(
-              url: defaultSubscriptionUrl
-            );
-            await updateSubscriptionInfo(updatedSubscription);
-            await updateSubscription(updatedSubscription);
-          } else {
-            // URL is the same, just update the subscription
-            await updateSubscription(defaultSubscription);
-          }
-        } else {
-          // No default subscription found, add one
-          await addSubscription('Default Subscription', defaultSubscriptionUrl);
-        }
-      } else {
-        // If no default subscription URL, load servers from the default URL
-        await fetchServers();
-      }
+      // Load servers from the default URL without creating a default subscription
+      await fetchServers();
       
       // Fetch the current notification status to sync with the app
       await fetchNotificationStatus();

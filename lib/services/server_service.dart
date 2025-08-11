@@ -103,7 +103,6 @@ class ServerService {
       // Use FlutterV2ray to parse the URL
       if (uri.startsWith('vmess://') ||
           uri.startsWith('vless://') ||
-          uri.startsWith('trojan://') ||
           uri.startsWith('ss://')) {
         try {
           V2RayURL parser = FlutterV2ray.parseFromURL(uri);
@@ -113,8 +112,6 @@ class ServerService {
             configType = 'vmess';
           } else if (uri.startsWith('vless://')) {
             configType = 'vless';
-          } else if (uri.startsWith('trojan://')) {
-            configType = 'trojan';
           } else if (uri.startsWith('ss://')) {
             configType = 'shadowsocks';
           }

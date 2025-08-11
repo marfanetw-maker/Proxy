@@ -6,9 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/v2ray_config.dart';
 import '../models/subscription.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 
 class IpInfo {
@@ -302,7 +300,6 @@ class V2RayService extends ChangeNotifier {
         try {
           if (line.startsWith('vmess://') || 
               line.startsWith('vless://') ||
-              line.startsWith('trojan://') ||
               line.startsWith('ss://')) {
             
             V2RayURL parser = FlutterV2ray.parseFromURL(line);
@@ -312,8 +309,6 @@ class V2RayService extends ChangeNotifier {
               configType = 'vmess';
             } else if (line.startsWith('vless://')) {
               configType = 'vless';
-            } else if (line.startsWith('trojan://')) {
-              configType = 'trojan';
             } else if (line.startsWith('ss://')) {
               configType = 'shadowsocks';
             }

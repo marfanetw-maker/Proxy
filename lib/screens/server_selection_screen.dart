@@ -290,8 +290,6 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         return Colors.blue;
       case 'vless':
         return Colors.purple;
-      case 'trojan':
-        return Colors.orange;
       case 'shadowsocks':
         return Colors.green;
       default:

@@ -123,7 +123,7 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
           controller: _urlController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: 'Enter URL (e.g., https://www.google.com)',
+            hintText: 'Enter URL',
             hintStyle: TextStyle(color: Colors.grey[400]),
             border: InputBorder.none,
             prefixIcon: const Icon(Icons.link, color: AppTheme.primaryGreen),
@@ -334,9 +334,6 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
   }
 
   Widget _buildResponseDetailsCard() {
-    final Map<String, String> headers = _result!.containsKey('headers') && _result!['headers'] is Map
-        ? Map<String, String>.from(_result!['headers'] as Map)
-        : <String, String>{};
     final int? contentLength = _result!['contentLength'] as int?;
     final bool isSuccess = _result!['isSuccess'] as bool;
 
@@ -364,18 +361,13 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
             if (isSuccess) ...[  
               const SizedBox(height: 8),
               const Text(
-                'Headers',
+                'Headers and cookies information hidden for security reasons',
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
                   color: Colors.white70,
                 ),
               ),
-              const SizedBox(height: 8),
-              if (headers.isNotEmpty)
-                ...headers.entries.map((entry) => _buildInfoRow(entry.key, entry.value))
-              else
-                const Text('No headers available', style: TextStyle(color: Colors.white70)),
             ]
           ],
         ),

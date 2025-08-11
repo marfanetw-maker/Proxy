@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/telegram_proxy_provider.dart';
+import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
 import 'telegram_proxy_screen.dart';
@@ -22,6 +23,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const StoreScreen(),
     const ToolsScreen(),
   ];
+  
+  @override
+  void initState() {
+    super.initState();
+    // Auto-update all subscriptions when app opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<V2RayProvider>(context, listen: false);
+      provider.updateAllSubscriptions();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
