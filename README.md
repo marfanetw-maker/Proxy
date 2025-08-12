@@ -12,6 +12,10 @@
   <b>An open-source VPN that's fast, unlimited, secure, and completely free.</b>
 </p>
 
+<p align="center">
+  <a href="FA.md">فارسی</a>
+</p>
+
 ## 🚀 Overview
 
 Proxy Cloud is a modern, feature-rich Flutter application designed to provide secure, private internet access through V2Ray VPN technology and Telegram MTProto proxies. With an intuitive interface and powerful capabilities, Proxy Cloud puts you in control of your online privacy without any subscription fees or hidden costs.
