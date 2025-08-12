@@ -69,20 +69,34 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         backgroundColor: AppTheme.primaryDark,
         elevation: 0,
         actions: [
-          if (_selectedFilter == 'All')
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () async {
-                try {
-                  // Show loading indicator
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Updating servers...'), duration: Duration(seconds: 1)),
-                  );
-                  
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () async {
+              try {
+                // Show loading indicator
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Updating servers...'), duration: Duration(seconds: 1)),
+                );
+                
+                if (_selectedFilter == 'All') {
                   // Update all subscriptions when 'All' is selected
                   await provider.updateAllSubscriptions();
+                } else if (_selectedFilter != 'Default') {
+                  // Update individual subscription
+                  final subscription = subscriptions.firstWhere(
+                    (sub) => sub.name == _selectedFilter,
+                    orElse: () => Subscription(id: '', name: '', url: '', lastUpdated: DateTime.now(), configIds: []),
+                  );
                   
-                  // Always check if there was an error
+                  if (subscription.id.isNotEmpty) {
+                    await provider.updateSubscription(subscription);
+                  }
+                }
+                
+                // Refresh the UI to show updated server list
+                setState(() {});
+                
+                // Always check if there was an error
                 if (provider.errorMessage.isNotEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

@@ -5,6 +5,7 @@ import 'ip_info_screen.dart';
 import 'host_checker_screen.dart';
 import 'speedtest_screen.dart';
 import 'subscription_management_screen.dart';
+import 'vpn_settings_screen.dart';
 
 class ToolsScreen extends StatelessWidget {
   const ToolsScreen({Key? key}) : super(key: key);
@@ -73,6 +74,20 @@ class ToolsScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const SpeedtestScreen(),
+                ),
+              );
+            },
+          ),
+          _buildToolCard(
+            context,
+            title: 'VPN Settings',
+            description: 'Configure bypass subnets and other VPN options',
+            icon: Icons.settings,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const VpnSettingsScreen(),
                 ),
               );
             },

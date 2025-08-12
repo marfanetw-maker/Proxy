@@ -51,6 +51,9 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       // Load servers from the default URL without creating a default subscription
       await fetchServers();
       
+      // Update all subscriptions on app start
+      await updateAllSubscriptions();
+      
       // Fetch the current notification status to sync with the app
       await fetchNotificationStatus();
 
@@ -134,8 +137,17 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       final servers = await _serverService.fetchServers(customUrl: customUrl);
       
       if (servers.isNotEmpty) {
-        // Load and display servers immediately
-        _configs = servers;
+        // Get all subscription config IDs to preserve them
+        final subscriptionConfigIds = <String>{};
+        for (var subscription in _subscriptions) {
+          subscriptionConfigIds.addAll(subscription.configIds);
+        }
+        
+        // Keep existing subscription configs
+        final subscriptionConfigs = _configs.where((c) => subscriptionConfigIds.contains(c.id)).toList();
+        
+        // Add default servers to the configs list
+        _configs = [...subscriptionConfigs, ...servers];
         
         // Save configs and update UI immediately to show servers
         await _v2rayService.saveConfigs(_configs);
@@ -470,14 +482,51 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     _errorMessage = '';
     notifyListeners();
     
+    // Maximum number of connection attempts
+    const int maxAttempts = 3;
+    // Delay between attempts in seconds
+    const int retryDelaySeconds = 1;
+    
     try {
       // Disconnect from current server if connected
       if (_v2rayService.activeConfig != null) {
         await _v2rayService.disconnect();
       }
       
-      // Connect to new server
-      final success = await _v2rayService.connect(config);
+      // Try to connect with automatic retry
+      bool success = false;
+      String lastError = '';
+      
+      for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          // Connect to server
+          success = await _v2rayService.connect(config);
+          
+          if (success) {
+            // Connection successful, break the retry loop
+            break;
+          } else {
+            // Connection failed but no exception was thrown
+            lastError = 'Failed to connect to server on attempt $attempt';
+            print(lastError);
+            
+            // If this is not the last attempt, wait before retrying
+            if (attempt < maxAttempts) {
+              await Future.delayed(Duration(seconds: retryDelaySeconds));
+            }
+          }
+        } catch (e) {
+          // Exception during connection attempt
+          lastError = 'Error on connection attempt $attempt: $e';
+          print(lastError);
+          
+          // If this is not the last attempt, wait before retrying
+          if (attempt < maxAttempts) {
+            await Future.delayed(Duration(seconds: retryDelaySeconds));
+          }
+        }
+      }
+      
       if (success) {
         // Wait for 3 seconds as requested
         await Future.delayed(const Duration(seconds: 3));
@@ -498,10 +547,10 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         // Reset usage statistics when connecting to a new server
         await _v2rayService.resetUsageStats();
       } else {
-        _setError('Failed to connect to server');
+        _setError('Failed to connect after multiple attempts');
       }
     } catch (e) {
-      _setError('Error connecting to server: $e');
+      _setError('Error in connection process: $e');
     } finally {
       _isConnecting = false;
       notifyListeners();

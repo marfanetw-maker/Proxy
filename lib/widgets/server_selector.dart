@@ -43,28 +43,7 @@ class ServerSelector extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Row(
-                    children: [
-                      // Removed ping all servers icon as requested
-                      IconButton(
-                        icon: const Icon(Icons.refresh, color: AppTheme.primaryGreen),
-                        onPressed: isConnecting ? null : () async {
-                          try {
-                            await provider.fetchServers();
-                            
-                            // Check if there was an error
-                            if (provider.errorMessage.isNotEmpty) {
-                              ErrorSnackbar.show(context, provider.errorMessage);
-                              provider.clearError();
-                            }
-                          } catch (e) {
-                            ErrorSnackbar.show(context, 'Error refreshing servers: ${e.toString()}');
-                          }
-                        },
-                        tooltip: 'Refresh Servers',
-                      ),
-                    ],
-                  ),
+                  // Refresh Servers icon removed
                 ],
               ),
               const SizedBox(height: 12),

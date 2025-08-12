@@ -129,13 +129,56 @@ class V2RayService extends ChangeNotifier {
         return false;
       }
       
-      // Start V2Ray
+      // Get settings from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Get bypass subnets settings
+      final bool bypassEnabled = prefs.getBool('bypass_subnets_enabled') ?? false;
+      List<String>? bypassSubnets;
+      
+      if (bypassEnabled) {
+        final String savedSubnets = prefs.getString('bypass_subnets') ?? '';
+        if (savedSubnets.isNotEmpty) {
+          bypassSubnets = savedSubnets.trim().split('\n');
+        }
+      } else {
+        // Explicitly set bypassSubnets to null when the feature is disabled
+        bypassSubnets = null;
+      }
+      
+      // Always use VPN mode (not proxy mode)
+      // Save the VPN mode setting to SharedPreferences
+      await prefs.setBool('proxy_mode_enabled', false);
+      
+      // Save the VPN mode setting to the config object
+      config.isProxyMode = false;
+      
+      // Get custom DNS settings
+      final bool dnsEnabled = prefs.getBool('custom_dns_enabled') ?? false;
+      final String dnsServers = prefs.getString('custom_dns_servers') ?? '1.1.1.1';
+      
+      // Apply custom DNS settings if enabled
+      if (dnsEnabled && dnsServers.isNotEmpty) {
+        // Split the DNS servers string into a list (one per line)
+        List<String> serversList = dnsServers.trim().split('\n');
+        // Remove any empty entries
+        serversList = serversList.where((server) => server.trim().isNotEmpty).toList();
+        
+        if (serversList.isNotEmpty) {
+          // Set the DNS servers in the parser
+          parser.dns = {
+            "servers": serversList
+          };
+        }
+      }
+      
+      // Start V2Ray in VPN mode
       await _flutterV2ray.startV2Ray(
         remark: parser.remark,
         config: parser.getFullConfiguration(),
         blockedApps: null,
-        bypassSubnets: null,
-        proxyOnly: false, // Use VPN mode for proper traffic routing
+        bypassSubnets: bypassSubnets,
+        proxyOnly: false, // Always use VPN mode
         notificationDisconnectButtonName: "DISCONNECT",
       );
       
@@ -189,6 +232,11 @@ class V2RayService extends ChangeNotifier {
 
   Future<void> _saveActiveConfig(V2RayConfig config) async {
     final prefs = await SharedPreferences.getInstance();
+    
+    // Get the current proxy mode setting and update the config
+    final bool proxyModeEnabled = prefs.getBool('proxy_mode_enabled') ?? false;
+    config.isProxyMode = proxyModeEnabled;
+    
     await prefs.setString('active_config', jsonEncode(config.toJson()));
     // Also save as selected config for UI state persistence
     await _saveSelectedConfig(config);
@@ -196,6 +244,11 @@ class V2RayService extends ChangeNotifier {
   
   Future<void> _saveSelectedConfig(V2RayConfig config) async {
     final prefs = await SharedPreferences.getInstance();
+    
+    // Get the current proxy mode setting and update the config
+    final bool proxyModeEnabled = prefs.getBool('proxy_mode_enabled') ?? false;
+    config.isProxyMode = proxyModeEnabled;
+    
     await prefs.setString('selected_config', jsonEncode(config.toJson()));
   }
   

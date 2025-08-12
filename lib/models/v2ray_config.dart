@@ -6,6 +6,7 @@ class V2RayConfig {
   final String configType; // vmess, vless, etc.
   final String fullConfig;
   bool isConnected;
+  bool isProxyMode;
 
   V2RayConfig({
     required this.id,
@@ -15,6 +16,7 @@ class V2RayConfig {
     required this.configType,
     required this.fullConfig,
     this.isConnected = false,
+    this.isProxyMode = false,
   });
 
   Map<String, dynamic> toJson() {
@@ -26,6 +28,7 @@ class V2RayConfig {
       'configType': configType,
       'fullConfig': fullConfig,
       'isConnected': isConnected,
+      'isProxyMode': isProxyMode,
     };
   }
 
@@ -38,6 +41,7 @@ class V2RayConfig {
       configType: json['configType'],
       fullConfig: json['fullConfig'],
       isConnected: json['isConnected'] ?? false,
+      isProxyMode: json['isProxyMode'] ?? false,
     );
   }
 }
