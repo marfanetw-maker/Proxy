@@ -343,7 +343,22 @@ class V2RayService extends ChangeNotifier {
       }
 
       final List<V2RayConfig> configs = [];
-      final String content = response.body;
+      String content = response.body;
+      
+      // Try to decode as base64 first
+      try {
+        // Check if the content looks like base64
+        if (_isBase64(content)) {
+          final decoded = utf8.decode(base64.decode(content.trim()));
+          // If decoding succeeds, use the decoded content
+          content = decoded;
+          print('Successfully decoded base64 content');
+        }
+      } catch (e) {
+        // If base64 decoding fails, use the original content
+        print('Not a valid base64 content, using original: $e');
+      }
+      
       final List<String> lines = content.split('\n');
 
       for (String line in lines) {
@@ -474,6 +489,18 @@ class V2RayService extends ChangeNotifier {
   void _stopStatusMonitoring() {
     _statusCheckTimer?.cancel();
     _statusCheckTimer = null;
+  }
+  
+  // Helper method to check if a string is valid base64
+  bool _isBase64(String str) {
+    // Remove any whitespace
+    str = str.trim();
+    // Check if the length is valid for base64 (multiple of 4)
+    if (str.length % 4 != 0) {
+      return false;
+    }
+    // Check if the string contains only valid base64 characters
+    return RegExp(r'^[A-Za-z0-9+/=]+$').hasMatch(str);
   }
 
   Future<void> _checkConnectionStatus() async {
