@@ -4,30 +4,45 @@
   <img src="assets/images/logo.png" alt="Proxy Cloud Logo" width="150"/>
 </p>
 
-## Overview
+<p align="center">
+  <img src="screenshots/base.jpg" alt="Proxy Cloud Screenshot" width="300"/>
+</p>
 
-Proxy Cloud is an open-source Flutter application that provides a user-friendly interface for managing V2Ray VPN configurations and Telegram MTProto proxies. The app allows users to connect to V2Ray servers and access Telegram proxies with just a few taps.
+<p align="center">
+  <b>An open-source VPN that's fast, unlimited, secure, and completely free.</b>
+</p>
 
-## Features
+## 🚀 Overview
 
-### V2Ray VPN
-- Connect to V2Ray servers with a single tap
-- Import configurations via subscription URLs
-- Monitor connection status
+Proxy Cloud is a modern, feature-rich Flutter application designed to provide secure, private internet access through V2Ray VPN technology and Telegram MTProto proxies. With an intuitive interface and powerful capabilities, Proxy Cloud puts you in control of your online privacy without any subscription fees or hidden costs.
 
-### Telegram Proxies
-- Browse and connect to MTProto proxies
-- View proxy details (country, provider, ping, uptime)
-- One-tap connection to Telegram via proxies
-- Copy proxy details to clipboard
+## ✨ Key Features
 
-### User Interface
-- Modern, intuitive design with dark theme
-- Smooth animations and transitions
-- Real-time connection status indicators
-- Easy navigation between VPN and Proxy sections
+### 🔒 V2Ray VPN
+- **One-Tap Connection**: Connect to V2Ray servers instantly
+- **Subscription Management**: Import and organize configurations via subscription URLs
+- **Real-Time Monitoring**: Track connection status and performance
+- **Custom VPN Settings**: Configure bypass subnets and DNS options
 
-## Installation
+### 💬 Telegram Proxies
+- **Extensive Proxy Collection**: Browse and connect to MTProto proxies worldwide
+- **Detailed Information**: View country, provider, ping, and uptime statistics
+- **Seamless Integration**: One-tap connection to Telegram via selected proxies
+- **Easy Sharing**: Copy proxy details to clipboard for sharing
+
+### 🛠️ Advanced Tools
+- **IP Information**: View detailed information about your current IP address
+- **Host Checker**: Test status, response time, and details of any web host
+- **Speed Test**: Measure your internet connection performance
+- **Subscription Store**: Discover and add new V2Ray configurations
+
+### 🎨 Modern UI/UX
+- **Sleek Design**: Dark theme with vibrant accents
+- **Intuitive Navigation**: Easy access to all features
+- **Smooth Animations**: Polished transitions and effects
+- **Real-Time Indicators**: Visual feedback on connection status
+
+## 📱 Installation
 
 ### Download
 
@@ -38,11 +53,14 @@ Proxy Cloud is an open-source Flutter application that provides a user-friendly 
 | arm64-v8a   | <a href="https://github.com/code3-dev/ProxyCloud/releases/latest/download/proxycloud-arm64-v8a.apk"><img src="https://img.shields.io/badge/Android-arm64--v8a-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android arm64-v8a"></a> |
 | x86_64      | <a href="https://github.com/code3-dev/ProxyCloud/releases/latest/download/proxycloud-x86_64.apk"><img src="https://img.shields.io/badge/Android-x86_64-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android x86_64"></a> |
 
-### Prerequisites
+### For Developers
+
+#### Prerequisites
 - Flutter SDK (version ^3.7.2)
 - Dart SDK
 - Android Studio / VS Code
 - Android device or emulator
+
 ### Steps
 
 1. Clone the repository:
