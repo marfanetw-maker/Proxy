@@ -152,7 +152,7 @@ class AboutScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      _launchUrl('https://github.com/code3-dev/ProxyCloud/blob/main/PRIVACY.md');
+                      _launchUrl('https://github.com/code3-dev/ProxyCloud/blob/master/PRIVACY.md');
                     },
                     icon: const Icon(Icons.privacy_tip_outlined),
                     label: const Text('Privacy Policy'),
@@ -174,7 +174,7 @@ class AboutScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      _launchUrl('https://github.com/code3-dev/ProxyCloud/blob/main/TERMS.md');
+                      _launchUrl('https://github.com/code3-dev/ProxyCloud/blob/master/TERMS.md');
                     },
                     icon: const Icon(Icons.gavel_outlined),
                     label: const Text('Terms of Service'),

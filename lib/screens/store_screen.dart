@@ -155,7 +155,7 @@ class _StoreScreenState extends State<StoreScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Contact',
+                  'Add New',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -308,38 +308,13 @@ class _StoreScreenState extends State<StoreScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.primaryGreen
-                                              .withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          border: Border.all(
-                                            color: AppTheme.primaryGreen.withOpacity(0.3),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          item['dev'] ?? 'Unknown',
-                                          style: TextStyle(
-                                            color: AppTheme.primaryGreen,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
                                     ],
                                   ),
                                   // Developer name below subscription name
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4.0),
                                     child: Text(
-                                      'by ${item['dev'] ?? 'Unknown'}',
+                                      item['dev'] ?? 'Unknown',
                                       style: const TextStyle(
                                         color: Colors.white60,
                                         fontSize: 13,

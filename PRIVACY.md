@@ -4,66 +4,57 @@
 
 ## Introduction
 
-Welcome to Proxy Cloud. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you about how we look after your personal data when you use our application and tell you about your privacy rights and how the law protects you.
+Welcome to Proxy Cloud. This application is designed with complete privacy in mind. This privacy policy explains our commitment to protecting your privacy and personal data.
 
 ## The Data We Collect
 
-Proxy Cloud is designed with privacy as a fundamental principle. We collect minimal data necessary for the functioning of the application:
+**We collect NO data from you. Period.**
 
-### Technical Data
-- **Application usage statistics**: Anonymous data about app crashes and performance metrics to improve stability
-- **Device information**: Operating system version and device model for compatibility purposes
+Proxy Cloud is built on the principle of zero data collection:
+
+- **No usage statistics**: We do not collect any data about how you use the app
+- **No device information**: We do not collect information about your device
+- **No diagnostics**: We do not collect crash reports or performance metrics
 
 ### What We Do NOT Collect
 - **Browsing history**: We do not monitor, store, or log your browsing activities
-- **IP addresses**: We do not log your original IP address
-- **Personal identifiers**: We do not require personal information such as name, email, or phone number
+- **IP addresses**: We do not log your original or destination IP addresses
+- **Personal identifiers**: We do not require or collect personal information such as name, email, or phone number
 - **Location data**: We do not track or store your physical location
 - **Connection timestamps**: We do not log when you connect or disconnect from the service
+- **Account information**: No accounts are required to use this application
 
 ## How We Use Your Data
 
-The limited data we collect is used exclusively for:
-- Improving application stability and performance
-- Troubleshooting technical issues
-- Enhancing user experience through app improvements
+Since we collect no data, there is no data usage, storage, processing, or sharing.
 
 ## Data Sharing and Disclosure
 
-We do not sell, rent, or trade your information with third parties. We may share anonymous, aggregated statistics with trusted partners for the purpose of improving our service.
-
-We may disclose information if required to do so by law or in the good faith belief that such action is necessary to:
-- Comply with a legal obligation
-- Protect and defend our rights or property
-- Prevent or investigate possible wrongdoing in connection with the Service
+We do not share any data with third parties because:
+1. We collect no data to share
+2. There is no company or organization behind this app that would benefit from data sharing
+3. This app is provided completely free with no monetization model that would require data sharing
 
 ## Data Security
 
-We implement appropriate technical and organizational measures to protect the data we collect. However, no method of transmission over the Internet or method of electronic storage is 100% secure, and we cannot guarantee absolute security.
+The most secure data is data that is never collected. By design, this application does not collect, store, or transmit your personal data.
 
 ## Your Rights
 
-Depending on your location, you may have certain rights regarding your personal information, including:
-- The right to access information we hold about you
-- The right to request correction of your personal information
-- The right to request deletion of your personal information
-- The right to object to processing of your personal information
-- The right to data portability
+Since we collect no personal data, there is no personal data to access, correct, delete, or port. Your privacy is fully respected by default.
 
 ## Children's Privacy
 
-Our Service is not directed to children under the age of 13, and we do not knowingly collect personal information from children under 13.
+This application is safe for users of all ages as it collects no personal information from anyone, including children.
 
 ## Changes to This Privacy Policy
 
-We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
+If this privacy policy changes, we will update the "Last updated" date at the top of this page.
 
 ## Contact Us
 
-If you have any questions about this Privacy Policy, please contact us:
-- By opening an issue on our GitHub repository
-- By email: [h3dev.pira@gmail.com](mailto:h3dev.pira@gmail.com)
+If you have any questions about this Privacy Policy, please contact us by opening an issue on our GitHub repository.
 
 ---
 
-*This privacy policy is provided as a template and should be reviewed by a legal professional before use in a production environment.*
+This application is free, has no usage limits, requires no account, collects no data, and is fully committed to privacy.

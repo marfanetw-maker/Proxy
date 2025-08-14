@@ -4,72 +4,68 @@
 
 ## Introduction
 
-Welcome to Proxy Cloud. These Terms of Service ("Terms") govern your use of our application and services. By using Proxy Cloud, you agree to these Terms. If you disagree with any part of the terms, you may not use our application.
+Welcome to Proxy Cloud. These Terms of Service ("Terms") are simple and straightforward, reflecting our commitment to providing a free, unlimited, and privacy-focused application. By using Proxy Cloud, you agree to these Terms.
 
 ## Use of the Service
 
 ### License
 
-Proxy Cloud grants you a limited, non-exclusive, non-transferable, revocable license to use the application for your personal, non-commercial purposes.
+Proxy Cloud is provided as free software. You are granted a perpetual, worldwide, non-exclusive, royalty-free license to use the application without restrictions or limitations.
+
+### No Usage Limits
+
+There are no artificial limits imposed on your usage of this application. You can use all features without restrictions, time limits, bandwidth caps, or connection limits.
 
 ### Acceptable Use
 
-You agree to use Proxy Cloud only for lawful purposes and in accordance with these Terms. You agree not to use the service:
+You agree to use Proxy Cloud only for lawful purposes. You agree not to use the service:
 
 - In any way that violates any applicable national or international law or regulation
 - To engage in any activity that is illegal, harmful, or fraudulent
-- To attempt to bypass or circumvent any technological measures implemented to protect the service or third-party systems
 - To transmit any material that contains viruses, trojan horses, worms, or any other harmful programs
-- To interfere with or disrupt the service or servers or networks connected to the service
 
 ### Service Modifications
 
-We reserve the right to modify, suspend, or discontinue the service (or any part thereof) at any time, with or without notice. We shall not be liable to you or any third party for any modification, suspension, or discontinuance of the service.
+The application may be updated or modified from time to time to improve functionality, fix bugs, or enhance security. These updates will be provided free of charge.
 
 ## User Responsibilities
 
-### Account Security
+### No Account Required
 
-If you create an account, you are responsible for maintaining the confidentiality of your account information and for all activities that occur under your account. You agree to notify us immediately of any unauthorized use of your account or any other breach of security.
+Proxy Cloud does not require you to create an account. There is no registration process, no login credentials to maintain, and no account security to worry about.
 
 ### Content Responsibility
 
-You are solely responsible for all data, information, and material that you transmit using our service. We do not claim ownership of any content that you transmit through the service.
+You are solely responsible for all data and information that you transmit using this application. We have no access to, control over, or responsibility for this content.
+
+## Privacy
+
+Proxy Cloud is designed with full privacy protection. We do not collect, store, or share any of your personal data. For more details, please refer to our Privacy Policy.
 
 ## Intellectual Property
 
-The application, including all content, features, and functionality, is owned by Proxy Cloud and its licensors and is protected by international copyright, trademark, patent, trade secret, and other intellectual property or proprietary rights laws.
+The application is provided as free software. The source code may be available under an open-source license. You are free to use the application as provided without additional restrictions.
 
 ## Disclaimer of Warranties
 
-THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. WE EXPRESSLY DISCLAIM ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, STATUTORY OR OTHERWISE, INCLUDING BUT NOT LIMITED TO ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+THE SERVICE IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. TO THE FULLEST EXTENT PERMITTED BY LAW, WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 ## Limitation of Liability
 
-IN NO EVENT SHALL PROXY CLOUD, ITS DIRECTORS, EMPLOYEES, PARTNERS, AGENTS, SUPPLIERS, OR AFFILIATES, BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM YOUR ACCESS TO OR USE OF OR INABILITY TO ACCESS OR USE THE SERVICE.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE CREATORS, DEVELOPERS, OR CONTRIBUTORS OF Proxy Cloud BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR PUNITIVE DAMAGES ARISING OUT OF OR RELATING TO YOUR USE OF OR INABILITY TO USE THE APPLICATION.
 
-## Indemnification
+## No Commercial Entity
 
-You agree to defend, indemnify, and hold harmless Proxy Cloud and its licensors from and against any claims, liabilities, damages, judgments, awards, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising out of or relating to your violation of these Terms or your use of the Service.
-
-## Governing Law
-
-These Terms shall be governed by and construed in accordance with the laws of [Your Jurisdiction], without regard to its conflict of law provisions.
+Proxy Cloud is not operated by a commercial entity or company. It is provided by individual developers without a formal corporate structure.
 
 ## Changes to Terms
 
-We reserve the right to modify these Terms at any time. If we make changes, we will provide notice by posting the updated Terms on this page and updating the "Last updated" date. Your continued use of the Service after any such changes constitutes your acceptance of the new Terms.
-
-## Severability
-
-If any provision of these Terms is held to be unenforceable or invalid, such provision will be changed and interpreted to accomplish the objectives of such provision to the greatest extent possible under applicable law and the remaining provisions will continue in full force and effect.
+These Terms may be updated from time to time. If we make changes, we will update the "Last updated" date at the top of this page.
 
 ## Contact Us
 
-If you have any questions about these Terms, please contact us:
-- By opening an issue on our GitHub repository
-- By email: [h3dev.pira@gmail.com](mailto:h3dev.pira@gmail.com)
+If you have any questions about these Terms, please contact us by opening an issue on our GitHub repository.
 
 ---
 
-*These terms of service are provided as a template and should be reviewed by a legal professional before use in a production environment.*
+This application is free, has no usage limits, requires no account, collects no data, and is fully committed to privacy.
