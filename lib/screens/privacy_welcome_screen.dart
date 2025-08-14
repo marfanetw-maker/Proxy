@@ -273,7 +273,7 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
                       InkWell(
                         onTap: () async {
                           // Open privacy policy link
-                          final Uri url = Uri.parse('https://github.com/hiddify/Proxy-Client/blob/master/PRIVACY.md');
+                          final Uri url = Uri.parse('https://github.com/code3-dev/ProxyCloud/blob/master/PRIVACY.md');
                           try {
                             await launchUrl(url, mode: LaunchMode.externalApplication);
                           } catch (e) {
@@ -299,7 +299,7 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
                       InkWell(
                         onTap: () async {
                           // Open terms of service link
-                          final Uri url = Uri.parse('https://github.com/hiddify/Proxy-Client/blob/master/TERMS.md');
+                          final Uri url = Uri.parse('https://github.com/code3-dev/ProxyCloud/blob/master/TERMS.md');
                           try {
                             await launchUrl(url, mode: LaunchMode.externalApplication);
                           } catch (e) {
