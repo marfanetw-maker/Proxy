@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import 'main_navigation_screen.dart';
 
@@ -244,10 +245,62 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
                 },
                 activeColor: AppTheme.primaryGreen,
               ),
-              const Expanded(
-                child: Text(
-                  'I accept the privacy policy and terms of service',
-                  style: TextStyle(color: Colors.white70),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Text(
+                      'I accept the ',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    InkWell(
+                      onTap: () async {
+                        // Open privacy policy link
+                        final Uri url = Uri.parse('https://github.com/hiddify/Proxy-Client/blob/main/PRIVACY.md');
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not open Privacy Policy'),
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text(
+                        'privacy policy',
+                        style: TextStyle(color: AppTheme.primaryGreen, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                    const Text(
+                      ' and ',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                    InkWell(
+                      onTap: () async {
+                        // Open terms of service link
+                        final Uri url = Uri.parse('https://github.com/hiddify/Proxy-Client/blob/main/TERMS.md');
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not open Terms of Service'),
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text(
+                        'terms of service',
+                        style: TextStyle(color: AppTheme.primaryGreen, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

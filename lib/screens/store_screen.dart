@@ -140,6 +140,60 @@ class _StoreScreenState extends State<StoreScreen> {
     }
   }
 
+  void _showContactDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: AppTheme.secondaryDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Contact',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(
+                    Icons.telegram,
+                    color: Colors.blue,
+                    size: 28,
+                  ),
+                  title: const Text(
+                    'Contact on Telegram',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _launchTelegramUrl();
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -229,8 +283,10 @@ class _StoreScreenState extends State<StoreScreen> {
                           return Card(
                             margin: const EdgeInsets.only(bottom: 16),
                             color: Colors.white.withOpacity(0.1),
+                            elevation: 4,
+                            shadowColor: Colors.black.withOpacity(0.3),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -246,7 +302,7 @@ class _StoreScreenState extends State<StoreScreen> {
                                           item['name'] ?? 'Unknown',
                                           style: const TextStyle(
                                             color: Colors.white,
-                                            fontSize: 18,
+                                            fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                           ),
                                           overflow: TextOverflow.ellipsis,
@@ -254,8 +310,8 @@ class _StoreScreenState extends State<StoreScreen> {
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
+                                          horizontal: 10,
+                                          vertical: 5,
                                         ),
                                         decoration: BoxDecoration(
                                           color: AppTheme.primaryGreen
@@ -263,33 +319,59 @@ class _StoreScreenState extends State<StoreScreen> {
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
+                                          border: Border.all(
+                                            color: AppTheme.primaryGreen.withOpacity(0.3),
+                                            width: 1,
+                                          ),
                                         ),
                                         child: Text(
                                           item['dev'] ?? 'Unknown',
                                           style: TextStyle(
                                             color: AppTheme.primaryGreen,
-                                            fontSize: 12,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  // Developer name below subscription name
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      'by ${item['dev'] ?? 'Unknown'}',
+                                      style: const TextStyle(
+                                        color: Colors.white60,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
                                   Container(
-                                    padding: const EdgeInsets.all(8),
+                                    padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(8),
+                                      color: Colors.black.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.1),
+                                        width: 1,
+                                      ),
                                     ),
                                     child: Row(
                                       children: [
+                                        const Icon(
+                                          Icons.link,
+                                          color: Colors.white54,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
                                             item['url'] ?? '',
                                             style: const TextStyle(
                                               color: Colors.white70,
                                               fontFamily: 'monospace',
-                                              fontSize: 12,
+                                              fontSize: 13,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -297,7 +379,8 @@ class _StoreScreenState extends State<StoreScreen> {
                                         IconButton(
                                           icon: const Icon(
                                             Icons.copy,
-                                            color: Colors.white70,
+                                            color: AppTheme.primaryGreen,
+                                            size: 20,
                                           ),
                                           onPressed:
                                               () => _copyToClipboard(
@@ -326,9 +409,14 @@ class _StoreScreenState extends State<StoreScreen> {
                                           backgroundColor:
                                               AppTheme.primaryGreen,
                                           foregroundColor: Colors.white,
+                                          elevation: 3,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 10,
+                                          ),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
-                                              8,
+                                              10,
                                             ),
                                           ),
                                         ),
@@ -345,12 +433,13 @@ class _StoreScreenState extends State<StoreScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _launchTelegramUrl,
-        backgroundColor: Colors.blue,
-        icon: const Icon(Icons.telegram, color: Colors.white),
-        label: const Text('Add New', style: TextStyle(color: Colors.white)),
-      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showContactDialog,
+        backgroundColor: AppTheme.primaryGreen,
+        mini: true,
+        child: const Icon(Icons.contact_support, color: Colors.white),
+      )
     );
   }
 }

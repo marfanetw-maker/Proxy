@@ -51,7 +51,7 @@ class AboutScreen extends StatelessWidget {
 
             // App Version
             const Text(
-              'Version 1.7.0',
+              'Version 1.8.0',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             
@@ -92,7 +92,7 @@ class AboutScreen extends StatelessWidget {
                 ),
               ),
               child: const Text(
-                'A powerful and user-friendly proxy client designed to provide unrestricted internet access. Enjoy seamless connectivity with just one tap, easily manage multiple servers, and browse with complete privacy and security.',
+                'Proxy Cloud is a powerful Flutter application designed to provide secure, private internet access through V2Ray VPN technology and Telegram MTProto proxies. With an intuitive dark-themed interface and comprehensive features, Proxy Cloud puts you in control of your online privacy without any subscription fees or hidden costs.',
                 style: TextStyle(fontSize: 16, height: 1.5),
                 textAlign: TextAlign.center,
               ),
@@ -136,6 +136,50 @@ class AboutScreen extends StatelessWidget {
                     label: const Text('GitHub Source'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueGrey,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Privacy Policy Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _launchUrl('https://github.com/code3-dev/ProxyCloud/blob/main/PRIVACY.md');
+                    },
+                    icon: const Icon(Icons.privacy_tip_outlined),
+                    label: const Text('Privacy Policy'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Terms of Service Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _launchUrl('https://github.com/code3-dev/ProxyCloud/blob/main/TERMS.md');
+                    },
+                    icon: const Icon(Icons.gavel_outlined),
+                    label: const Text('Terms of Service'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(

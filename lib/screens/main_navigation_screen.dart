@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/telegram_proxy_provider.dart';
 import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/error_snackbar.dart';
 import 'home_screen.dart';
 import 'telegram_proxy_screen.dart';
 import 'tools_screen.dart';
@@ -32,6 +34,69 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       final provider = Provider.of<V2RayProvider>(context, listen: false);
       provider.updateAllSubscriptions();
     });
+  }
+
+  Future<void> _launchTelegramUrl() async {
+    final Uri url = Uri.parse('https://t.me/h3dev');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ErrorSnackbar.show(context, 'Could not launch Telegram');
+      }
+    }
+  }
+
+  void _showContactDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: AppTheme.secondaryDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Contact',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(
+                    Icons.telegram,
+                    color: Colors.blue,
+                    size: 28,
+                  ),
+                  title: const Text(
+                    'Contact on Telegram',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _launchTelegramUrl();
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override

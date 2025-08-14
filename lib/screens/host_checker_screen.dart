@@ -15,6 +15,34 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   Map<String, dynamic>? _result;
+  
+  // List of default URLs for quick selection
+  final List<String> _defaultUrls = [
+    'https://www.google.com',
+    'https://www.youtube.com',
+    'https://firebase.google.com',
+    'https://x.com',
+    'https://chat.openai.com',
+    'https://gemini.google.com',
+    'https://www.tiktok.com',
+    'https://www.instagram.com',
+    'https://www.facebook.com',
+    'https://telegram.org'
+  ];
+  
+  // Map of URL display names
+  final Map<String, String> _urlDisplayNames = {
+    'https://www.google.com': 'Google',
+    'https://www.youtube.com': 'YouTube',
+    'https://firebase.google.com': 'Firebase',
+    'https://x.com': 'X (Twitter)',
+    'https://chat.openai.com': 'ChatGPT',
+    'https://gemini.google.com': 'Gemini',
+    'https://www.tiktok.com': 'TikTok',
+    'https://www.instagram.com': 'Instagram',
+    'https://www.facebook.com': 'Facebook',
+    'https://telegram.org': 'Telegram'
+  };
 
   @override
   void dispose() {
@@ -113,36 +141,85 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
   }
 
   Widget _buildUrlInput() {
-    return Card(
-      color: AppTheme.cardDark,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: TextField(
-          controller: _urlController,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Enter URL',
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            border: InputBorder.none,
-            prefixIcon: const Icon(Icons.link, color: AppTheme.primaryGreen),
-            suffixIcon: _urlController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.grey),
-                    onPressed: () {
-                      _urlController.clear();
-                      setState(() {});
-                    },
-                  )
-                : null,
+    return Column(
+      children: [
+        Card(
+          color: AppTheme.cardDark,
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _urlController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Enter URL',
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      border: InputBorder.none,
+                      prefixIcon: const Icon(Icons.link, color: AppTheme.primaryGreen),
+                      suffixIcon: _urlController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: Colors.grey),
+                              onPressed: () {
+                                _urlController.clear();
+                                setState(() {});
+                              },
+                            )
+                          : null,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                    keyboardType: TextInputType.url,
+                    textInputAction: TextInputAction.go,
+                    onSubmitted: (_) => _checkHost(),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.arrow_drop_down, color: AppTheme.primaryGreen),
+                  tooltip: 'Select a default URL',
+                  onSelected: (String url) {
+                    setState(() {
+                      _urlController.text = url;
+                    });
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return _defaultUrls.map((String url) {
+                      return PopupMenuItem<String>(
+                        value: url,
+                        child: Text(_urlDisplayNames[url] ?? url),
+                      );
+                    }).toList();
+                  },
+                ),
+              ],
+            ),
           ),
-          onChanged: (_) => setState(() {}),
-          keyboardType: TextInputType.url,
-          textInputAction: TextInputAction.go,
-          onSubmitted: (_) => _checkHost(),
         ),
-      ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _defaultUrls.take(5).map((url) {
+            return InkWell(
+              onTap: () {
+                setState(() {
+                  _urlController.text = url;
+                });
+              },
+              child: Chip(
+                backgroundColor: AppTheme.cardDark,
+                label: Text(
+                  _urlDisplayNames[url] ?? url,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

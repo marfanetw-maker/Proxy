@@ -9,42 +9,45 @@
 </p>
 
 <p align="center">
-  <b>An open-source VPN that's fast, unlimited, secure, and completely free.</b>
+  <b>A modern, feature-rich VPN client that's fast, unlimited, secure, and completely free.</b>
 </p>
 
 <p align="center">
-  <a href="FA.md">فارسی</a>
+  <a href="FA.md">فارسی</a> | <a href="ZH.md">中文</a> | <a href="RU.md">Русский</a>
 </p>
 
 ## 🚀 Overview
 
-Proxy Cloud is a modern, feature-rich Flutter application designed to provide secure, private internet access through V2Ray VPN technology and Telegram MTProto proxies. With an intuitive interface and powerful capabilities, Proxy Cloud puts you in control of your online privacy without any subscription fees or hidden costs.
+Proxy Cloud is a powerful Flutter application designed to provide secure, private internet access through V2Ray VPN technology and Telegram MTProto proxies. With an intuitive dark-themed interface and comprehensive features, Proxy Cloud puts you in control of your online privacy without any subscription fees or hidden costs.
 
 ## ✨ Key Features
 
 ### 🔒 V2Ray VPN
-- **One-Tap Connection**: Connect to V2Ray servers instantly
-- **Subscription Management**: Import and organize configurations via subscription URLs
-- **Real-Time Monitoring**: Track connection status and performance
-- **Custom VPN Settings**: Configure bypass subnets and DNS options
+- **One-Tap Connection**: Connect to V2Ray servers instantly with a single tap
+- **Subscription Management**: Import, organize, and update configurations via subscription URLs
+- **Real-Time Monitoring**: Track connection status and performance metrics
+- **Server Selection**: Browse and select from multiple server locations
+- **Custom VPN Settings**: Configure bypass subnets and DNS options for advanced users
 
 ### 💬 Telegram Proxies
-- **Extensive Proxy Collection**: Browse and connect to MTProto proxies worldwide
-- **Detailed Information**: View country, provider, ping, and uptime statistics
+- **Extensive Proxy Collection**: Browse and connect to MTProto proxies from around the world
+- **Detailed Information**: View country, provider, ping, and uptime statistics for each proxy
 - **Seamless Integration**: One-tap connection to Telegram via selected proxies
-- **Easy Sharing**: Copy proxy details to clipboard for sharing
+- **Easy Sharing**: Copy proxy details to clipboard for sharing with others
 
 ### 🛠️ Advanced Tools
-- **IP Information**: View detailed information about your current IP address
+- **IP Information**: View detailed information about your current IP address and location
 - **Host Checker**: Test status, response time, and details of any web host
-- **Speed Test**: Measure your internet connection performance
-- **Subscription Store**: Discover and add new V2Ray configurations
+- **Speed Test**: Measure your internet connection download and upload speeds
+- **Subscription Store**: Discover and add new V2Ray configurations from a curated collection
+- **Subscription Manager**: Add, edit, delete, and update your V2Ray subscriptions in one place
 
 ### 🎨 Modern UI/UX
-- **Sleek Design**: Dark theme with vibrant accents
-- **Intuitive Navigation**: Easy access to all features
-- **Smooth Animations**: Polished transitions and effects
-- **Real-Time Indicators**: Visual feedback on connection status
+- **Sleek Dark Theme**: Elegant dark interface with green accents for comfortable viewing
+- **Intuitive Navigation**: Bottom navigation bar for easy access to all features
+- **Smooth Animations**: Polished transitions and visual effects throughout the app
+- **Real-Time Indicators**: Visual feedback on connection status (connected, connecting, disconnected)
+- **Responsive Design**: Optimized for various screen sizes and orientations
 
 ## 📱 Installation
 
@@ -65,7 +68,7 @@ Proxy Cloud is a modern, feature-rich Flutter application designed to provide se
 - Android Studio / VS Code
 - Android device or emulator
 
-### Steps
+### Build Steps
 
 1. Clone the repository:
    ```bash
@@ -78,41 +81,86 @@ Proxy Cloud is a modern, feature-rich Flutter application designed to provide se
    flutter pub get
    ```
 
-3. Run the app:
+3. Run the app in debug mode:
    ```bash
    flutter run
    ```
 
-## Usage
+4. Build release APK:
+   ```bash
+   flutter build apk
+   ```
+
+## 📖 Usage Guide
 
 ### Setting up V2Ray
-1. Navigate to the VPN tab
-2. Tap on "Add License" to enter your subscription URL
-3. Select a server from the list
-4. Tap the connect button to establish a connection
+1. Navigate to the VPN tab (home screen)
+2. Tap on "Add Subscription" to enter your subscription URL and name
+3. Wait for the servers to load from your subscription
+4. Select a server from the list
+5. Tap the large connect button to establish a VPN connection
+
+### Managing Subscriptions
+1. Go to the Tools tab
+2. Select "Subscription Manager"
+3. Here you can add new subscriptions, edit existing ones, or delete unwanted subscriptions
+4. Use the refresh button to update all subscriptions at once
 
 ### Using Telegram Proxies
 1. Navigate to the Proxy tab
-2. Browse the list of available proxies
-3. Tap "Connect" on a proxy to open Telegram with the selected proxy
-4. Alternatively, copy the proxy details to manually configure in Telegram
+2. Browse the list of available MTProto proxies
+3. Tap "Connect" on a proxy to open Telegram with the selected proxy configuration
+4. Alternatively, tap the copy icon to copy the proxy details to manually configure in Telegram
 
-## Contributing
+### Exploring the Store
+1. Go to the Store tab
+2. Browse the curated list of V2Ray subscription providers
+3. Tap on any item to view details
+4. Use the "Add" button to quickly add a subscription to your collection
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+### Using Tools
+1. Navigate to the Tools tab
+2. Select from various utilities:
+   - IP Information: Check your current IP address and location details
+   - Host Checker: Test connectivity to any website or server
+   - Speed Test: Measure your connection speed
+   - VPN Settings: Configure advanced options for the VPN connection
 
-## License
+## 🤝 Contributing
+
+We welcome contributions to make Proxy Cloud even better! Here's how you can help:
+
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add some amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgements
+## 📜 Legal
+
+- [Privacy Policy](PRIVACY.md) - How we handle your data and protect your privacy
+- [Terms of Service](TERMS.md) - Rules and guidelines for using Proxy Cloud
+
+## 📞 Support
+
+If you encounter any issues or have questions, please open an issue on our GitHub repository.
+
+## 🙏 Acknowledgements
 
 - [Flutter](https://flutter.dev/) - UI toolkit for building natively compiled applications
-- [flutter_v2ray](https://pub.dev/packages/flutter_v2ray) - Flutter plugin for V2Ray
+- [V2Ray](https://www.v2ray.com/) - A platform for building proxies to bypass network restrictions
 - [Provider](https://pub.dev/packages/provider) - State management solution
-- [url_launcher](https://pub.dev/packages/url_launcher) - URL launching capability
-- [http](https://pub.dev/packages/http) - HTTP requests for API communication
+- All contributors who have helped shape this project
 
-## Contact
+---
 
-For questions, suggestions, or issues, please open an issue on the GitHub repository.
+<p align="center">
+  <b>Developed by Hossein Pira</b><br>
+  <i>Fast, Unlimited, Safe and Free</i>
+</p>
