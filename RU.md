@@ -60,6 +60,12 @@ Proxy Cloud — это мощное приложение на Flutter, разр�
 | arm64-v8a   | <a href="https://github.com/code3-dev/ProxyCloud/releases/latest/download/proxycloud-arm64-v8a.apk"><img src="https://img.shields.io/badge/Android-arm64--v8a-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android arm64-v8a"></a> |
 | x86_64      | <a href="https://github.com/code3-dev/ProxyCloud/releases/latest/download/proxycloud-x86_64.apk"><img src="https://img.shields.io/badge/Android-x86_64-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android x86_64"></a> |
 
+### Windows
+
+| Architecture | Download Link |
+|-------------|---------------|
+| x86_64         | <a href="https://github.com/code3-dev/ProxyCloud-Desktop/releases/latest/download/proxycloud-win.exe"><img src="https://img.shields.io/badge/Windows-x64-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows x64"></a> |
+
 ### Для разработчиков
 
 #### Предварительные требования
