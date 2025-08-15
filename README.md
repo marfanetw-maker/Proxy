@@ -60,11 +60,21 @@ Proxy Cloud is a powerful Flutter application designed to provide secure, privat
 | arm64-v8a   | <a href="https://github.com/code3-dev/ProxyCloud/releases/latest/download/proxycloud-arm64-v8a.apk"><img src="https://img.shields.io/badge/Android-arm64--v8a-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android arm64-v8a"></a> |
 | x86_64      | <a href="https://github.com/code3-dev/ProxyCloud/releases/latest/download/proxycloud-x86_64.apk"><img src="https://img.shields.io/badge/Android-x86_64-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android x86_64"></a> |
 
-### Windows
+#### Windows
+- [📦 Windows Installer (.exe)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-win-x64.exe)
+- [💼 Windows Portable (.exe)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-win-portable.exe)
 
-| Architecture | Download Link |
-|-------------|---------------|
-| x86_64         | <a href="https://github.com/code3-dev/ProxyCloud-Desktop/releases/latest/download/proxycloud-win.exe"><img src="https://img.shields.io/badge/Windows-x64-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows x64"></a> |
+#### macOS
+- [🍎 macOS Intel (.dmg)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-mac-x64.dmg)
+- [🍎 macOS Apple Silicon (.dmg)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-mac-arm64.dmg)
+- [📦 macOS Intel (.zip)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-mac-x64.zip)
+- [📦 macOS Apple Silicon (.zip)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-mac-arm64.zip)
+
+#### Linux
+- [🐧 Linux (.deb)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-linux-amd64.deb)
+- [🐧 Linux (.rpm)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-linux-x86_64.rpm)
+- [🐧 Linux (.AppImage)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-linux-x86_64.AppImage)
+- [🐧 Linux (.tar.gz)](https://github.com/code3-dev/ProxyCloud-GUI/releases/download/v1.2.0/proxycloud-gui-linux-x64.tar.gz)
 
 ### For Developers
 
