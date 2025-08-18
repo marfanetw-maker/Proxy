@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/v2ray_config.dart';
 import '../providers/v2ray_provider.dart';
+import '../services/v2ray_service.dart';
 import '../theme/app_theme.dart';
 
-class ServerBottomSheet extends StatelessWidget {
+class ServerBottomSheet extends StatefulWidget {
   final List<V2RayConfig> configs;
   final V2RayConfig? selectedConfig;
   final bool isConnecting;
@@ -17,8 +18,52 @@ class ServerBottomSheet extends StatelessWidget {
     required this.isConnecting,
     required this.onConfigSelected,
   }) : super(key: key);
-  
-  // Removed ping indicator method as requested
+
+  @override
+  State<ServerBottomSheet> createState() => _ServerBottomSheetState();
+}
+
+class _ServerBottomSheetState extends State<ServerBottomSheet> {
+  final Map<String, int?> _pings = {};
+  final Map<String, bool> _loadingPings = {};
+  final V2RayService _v2rayService = V2RayService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllPings();
+  }
+
+  Future<void> _loadAllPings() async {
+    for (final config in widget.configs) {
+      _loadPingForConfig(config);
+    }
+  }
+
+  Future<void> _loadPingForConfig(V2RayConfig config) async {
+    if (mounted) {
+      setState(() {
+        _loadingPings[config.id] = true;
+      });
+    }
+
+    try {
+      final delay = await _v2rayService.getServerDelay(config);
+      if (mounted) {
+        setState(() {
+          _pings[config.id] = delay;
+          _loadingPings[config.id] = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _pings[config.id] = null;
+          _loadingPings[config.id] = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,11 +118,13 @@ class ServerBottomSheet extends StatelessWidget {
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
-              itemCount: configs.length,
+              itemCount: widget.configs.length,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               itemBuilder: (context, index) {
-                final config = configs[index];
-                final isSelected = selectedConfig?.id == config.id;
+                final config = widget.configs[index];
+                final isSelected = widget.selectedConfig?.id == config.id;
+                final isLoadingPing = _loadingPings[config.id] ?? false;
+                final ping = _pings[config.id];
                 
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -93,17 +140,51 @@ class ServerBottomSheet extends StatelessWidget {
                       color: isSelected ? AppTheme.primaryGreen : AppTheme.textGrey,
                     ),
                   ),
-                  title: Text(
-                    config.remark,
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          config.remark,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      if (isLoadingPing)
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        )
+                      else if (ping != null)
+                        Text(
+                          '${ping}ms',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
                   ),
-                  subtitle: Text(
-                    '${config.address}:${config.port} (${config.configType})',
-                    style: const TextStyle(fontSize: 12),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${config.address}:${config.port} (${config.configType})',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      Text(
+                        'وضعیت: ${config.isConnected ? "متصل" : "قطع"}',
+                        style: TextStyle(
+                          color: config.isConnected ? Colors.green : Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  onTap: isConnecting
+                  onTap: widget.isConnecting
                       ? null
                       : () async {
                           // Get the provider to check connection status
@@ -127,7 +208,7 @@ class ServerBottomSheet extends StatelessWidget {
                             );
                           } else {
                             // Not connected, proceed with selection
-                            await onConfigSelected(config);
+                            await widget.onConfigSelected(config);
                             Navigator.pop(context);
                           }
                         },
