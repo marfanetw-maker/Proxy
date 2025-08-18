@@ -48,7 +48,7 @@ class AboutScreen extends StatelessWidget {
 
             // App Version
             const Text(
-              'Version 1.9.5',
+              'Version 2.0.0',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
 
