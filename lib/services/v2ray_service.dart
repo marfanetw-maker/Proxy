@@ -763,6 +763,53 @@ class V2RayService extends ChangeNotifier {
     }
   }
 
+  Future<V2RayConfig?> parseSubscriptionConfig(String configText) async {
+    try {
+      // Try to parse as a V2Ray URL
+      final parser = FlutterV2ray.parseFromURL(configText);
+      
+      // Determine the protocol type from the URL prefix
+      String configType = '';
+      if (configText.startsWith('vmess://')) {
+        configType = 'vmess';
+      } else if (configText.startsWith('vless://')) {
+        configType = 'vless';
+      } else if (configText.startsWith('ss://')) {
+        configType = 'shadowsocks';
+      } else {
+        throw Exception('Unsupported protocol');
+      }
+
+      // Extract address and port from the URL string
+      String address = '';
+      int port = 0;
+
+      if (configText.contains('@')) {
+        final parts = configText.split('@')[1].split(':');
+        address = parts[0];
+        if (parts.length > 1) {
+          port = int.tryParse(parts[1].split('/')[0].split('?')[0]) ?? 0;
+        }
+      }
+      
+      // Create a new V2RayConfig object with a generated ID
+      return V2RayConfig(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        remark: parser.remark,
+        address: address,
+        port: port,
+        configType: configType,
+        fullConfig: configText,
+        isConnected: false,
+        isProxyMode: false,
+      );
+    } catch (e) {
+      debugPrint('Error parsing config: $e');
+      return null;
+    }
+  }
+
+  @override
   void dispose() {
     _stopStatusMonitoring();
     _stopUsageMonitoring();

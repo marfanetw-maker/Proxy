@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_application_1/models/v2ray_config.dart';
@@ -33,6 +34,54 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   final V2RayService _v2rayService = V2RayService();
   final StreamController<String> _autoConnectStatusStream =
       StreamController<String>.broadcast();
+  
+  Future<void> _importFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData == null || clipboardData.text == null || clipboardData.text!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Clipboard is empty')),
+        );
+        return;
+      }
+
+      final provider = Provider.of<V2RayProvider>(context, listen: false);
+      final config = await provider.importConfigFromText(clipboardData.text!);
+      
+      if (config != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Configuration imported successfully')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to import configuration: Invalid format'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error importing configuration: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteLocalConfig(V2RayConfig config) async {
+    try {
+      await Provider.of<V2RayProvider>(context, listen: false).removeConfig(config);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Configuration deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete configuration: $e')),
+      );
+    }
+  }
   final Map<String, bool> _cancelPingTasks = {};
   Timer? _batchTimeoutTimer;
   bool _sortByPing = false; // New variable for ping sorting
@@ -42,6 +91,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedFilter = 'All';
   }
 
   @override
@@ -301,7 +351,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     final provider = Provider.of<V2RayProvider>(context, listen: false);
     final subscriptions = provider.subscriptions;
 
-    final filterOptions = ['All', ...subscriptions.map((sub) => sub.name)];
+    final filterOptions = ['All', 'Local', ...subscriptions.map((sub) => sub.name)];
 
     // Add sort and ping buttons in the app bar actions
     final List<Widget> appBarActions = [
@@ -390,6 +440,14 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     List<V2RayConfig> filteredConfigs = [];
     if (_selectedFilter == 'All') {
       filteredConfigs = List.from(widget.configs);
+    } else if (_selectedFilter == 'Local') {
+      // Filter configs that don't belong to any subscription
+      final allSubscriptionConfigIds = subscriptions
+          .expand((sub) => sub.configIds)
+          .toSet();
+      filteredConfigs = widget.configs
+          .where((config) => !allSubscriptionConfigIds.contains(config.id))
+          .toList();
     } else {
       final subscription = subscriptions.firstWhere(
         (sub) => sub.name == _selectedFilter,
@@ -426,15 +484,21 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.primaryDark,
+      floatingActionButton: _selectedFilter == 'Local' ? FloatingActionButton(
+        onPressed: _importFromClipboard,
+        backgroundColor: AppTheme.primaryGreen,
+        child: const Icon(Icons.paste),
+      ) : null,
       appBar: AppBar(
         title: const Text('Select Server'),
         backgroundColor: AppTheme.primaryDark,
         elevation: 0,
         actions: [
           ...appBarActions,
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () async {
+          if (_selectedFilter != 'Local')
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () async {
               try {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -805,6 +869,15 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                               ),
                                             ),
                                             const SizedBox(width: 8),
+                                            if (_selectedFilter == 'Local')
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.delete,
+                                                  color: Colors.red,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () => _deleteLocalConfig(config),
+                                              ),
                                             _loadingPings[config.id] == true
                                                 ? const SizedBox(
                                                   width: 12,

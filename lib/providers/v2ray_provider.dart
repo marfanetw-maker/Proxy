@@ -251,21 +251,60 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> removeConfig(V2RayConfig config) async {
-    _configs.removeWhere((c) => c.id == config.id);
+    try {
+      _configs.removeWhere((c) => c.id == config.id);
 
-    // Also remove from subscriptions
-    for (int i = 0; i < _subscriptions.length; i++) {
-      final subscription = _subscriptions[i];
-      if (subscription.configIds.contains(config.id)) {
-        final updatedConfigIds = List<String>.from(subscription.configIds)
-          ..remove(config.id);
-        _subscriptions[i] = subscription.copyWith(configIds: updatedConfigIds);
+      // Also remove from subscriptions if the config is part of any subscription
+      for (int i = 0; i < _subscriptions.length; i++) {
+        final subscription = _subscriptions[i];
+        if (subscription.configIds.contains(config.id)) {
+          final updatedConfigIds = List<String>.from(subscription.configIds)
+            ..remove(config.id);
+          _subscriptions[i] = subscription.copyWith(configIds: updatedConfigIds);
+        }
       }
-    }
 
-    await _v2rayService.saveConfigs(_configs);
-    await _v2rayService.saveSubscriptions(_subscriptions);
-    notifyListeners();
+      // If the deleted config was selected, clear the selection
+      if (_selectedConfig?.id == config.id) {
+        _selectedConfig = null;
+      }
+
+      await _v2rayService.saveConfigs(_configs);
+      await _v2rayService.saveSubscriptions(_subscriptions);
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to delete configuration: $e');
+    }
+  }
+
+  Future<V2RayConfig?> importConfigFromText(String configText) async {
+    try {
+      // Try to parse the configuration
+      final config = await _v2rayService.parseSubscriptionConfig(configText);
+      if (config == null) {
+        throw Exception('Invalid configuration format');
+      }
+      
+      // Add the config to the list
+      await addConfig(config);
+      
+      return config;
+    } catch (e) {
+      _setError('Failed to import configuration: $e');
+      return null;
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Dispose the service to stop monitoring
+    _v2rayService.dispose();
+    // Disconnect if connected when disposing
+    if (_v2rayService.activeConfig != null) {
+      _v2rayService.disconnect();
+    }
+    super.dispose();
   }
 
   Future<void> addSubscription(String name, String url) async {
@@ -782,17 +821,5 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       print('Error checking connection status: $e');
       // Don't change connection state on errors
     }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    // Dispose the service to stop monitoring
-    _v2rayService.dispose();
-    // Disconnect if connected when disposing
-    if (_v2rayService.activeConfig != null) {
-      _v2rayService.disconnect();
-    }
-    super.dispose();
   }
 }
