@@ -130,6 +130,13 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> fetchServers({String? customUrl}) async {
+    // Check if we have a default subscription - if so, skip fetching default servers
+    bool hasDefaultSubscription = _subscriptions.any((sub) => sub.name == "Default Subscription");
+    if (hasDefaultSubscription && customUrl == null) {
+      // Skip fetching default servers if we already have a default subscription
+      return;
+    }
+    
     _isLoadingServers = true;
     _errorMessage = '';
     notifyListeners();

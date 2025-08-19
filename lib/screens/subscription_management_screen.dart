@@ -401,9 +401,9 @@ class _SubscriptionManagementScreenState extends State<SubscriptionManagementScr
                                         tooltip: 'Edit',
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
-                                        onPressed: () => _deleteSubscription(context, subscription),
-                                        tooltip: 'Delete',
+                                        icon: Icon(Icons.delete, color: subscription.name.toLowerCase() == 'default subscription' ? Colors.grey : Colors.red),
+                                        onPressed: subscription.name.toLowerCase() == 'default subscription' ? null : () => _deleteSubscription(context, subscription),
+                                        tooltip: subscription.name.toLowerCase() == 'default subscription' ? 'Cannot delete default subscription' : 'Delete',
                                       ),
                                     ],
                                   ),

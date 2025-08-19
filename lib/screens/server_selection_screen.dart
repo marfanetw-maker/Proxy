@@ -57,8 +57,12 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   ) {
     final Map<String, List<V2RayConfig>> groupedConfigs = {};
     for (var config in configs) {
-      final key = config.id; // Unique per config
-      groupedConfigs[key] = [config];
+      // Use config.id as the key to ensure each config is treated individually
+      final key = config.id;
+      if (!groupedConfigs.containsKey(key)) {
+        groupedConfigs[key] = [];
+      }
+      groupedConfigs[key]!.add(config);
     }
     return groupedConfigs;
   }
@@ -236,20 +240,12 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
     final filterOptions = [
       'All',
-      'Default',
       ...subscriptions.map((sub) => sub.name),
     ];
 
     List<V2RayConfig> filteredConfigs = [];
     if (_selectedFilter == 'All') {
       filteredConfigs = widget.configs;
-    } else if (_selectedFilter == 'Default') {
-      final allSubscriptionConfigIds =
-          subscriptions.expand((sub) => sub.configIds).toSet();
-      filteredConfigs =
-          widget.configs
-              .where((config) => !allSubscriptionConfigIds.contains(config.id))
-              .toList();
     } else {
       final subscription = subscriptions.firstWhere(
         (sub) => sub.name == _selectedFilter,
@@ -781,7 +777,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
           orElse:
               () => Subscription(
                 id: '',
-                name: 'Default',
+                name: 'Default Subscription',
                 url: '',
                 lastUpdated: DateTime.now(),
                 configIds: [],

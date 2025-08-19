@@ -8,6 +8,7 @@ import 'package:flutter_application_1/models/v2ray_config.dart';
 import 'package:flutter_application_1/models/subscription.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 class IpInfo {
   final String ip;
@@ -75,6 +76,34 @@ class V2RayService extends ChangeNotifier {
   // Ping cache
   final Map<String, int?> _pingCache = {};
   final Map<String, bool> _pingInProgress = {};
+  
+  // Get list of installed apps (Android only)
+  Future<List<Map<String, dynamic>>> getInstalledApps() async {
+    try {
+      // On Android, use the method channel to get installed apps
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        const platform = MethodChannel('com.cloud.pira/app_list');
+        final List<dynamic> result = await platform.invokeMethod('getInstalledApps');
+        
+        // Convert the result to a List<Map<String, dynamic>>
+        final List<Map<String, dynamic>> appList = result
+            .map((app) => {
+              'packageName': app['packageName'] as String,
+              'name': app['name'] as String,
+              'isSystemApp': app['isSystemApp'] as bool,
+            })
+            .toList();
+            
+        return appList;
+      } else {
+        // Return empty list on non-Android platforms
+        return [];
+      }
+    } catch (e) {
+      debugPrint('Error getting installed apps: $e');
+      return [];
+    }
+  }
 
   // Clear ping cache for all configs or a specific config
   void clearPingCache({String? configId}) {
@@ -186,11 +215,14 @@ class V2RayService extends ChangeNotifier {
         }
       }
 
+      // Get blocked apps from shared preferences
+      final blockedAppsList = prefs.getStringList('blocked_apps');
+      
       // Start V2Ray in VPN mode
       await _flutterV2ray.startV2Ray(
         remark: parser.remark,
         config: parser.getFullConfiguration(),
-        blockedApps: null,
+        blockedApps: blockedAppsList, // Use saved blocked apps list
         bypassSubnets: bypassSubnets,
         proxyOnly: status_proxy, // Use proxy mode based on status_proxy parameter
         notificationDisconnectButtonName: "DISCONNECT",
@@ -208,15 +240,15 @@ class V2RayService extends ChangeNotifier {
       // Fetch IP information
       fetchIpInfo()
           .then((ipInfo) {
-            print('IP Info fetched: ${ipInfo.ip} - ${ipInfo.country}');
+            debugPrint('IP Info fetched: ${ipInfo.ip} - ${ipInfo.country}');
           })
           .catchError((e) {
-            print('Error fetching IP info: $e');
+            debugPrint('Error fetching IP info: $e');
           });
 
       return true;
     } catch (e) {
-      print('Error connecting to V2Ray: $e');
+      debugPrint('Error connecting to V2Ray: $e');
       return false;
     }
   }
@@ -242,7 +274,7 @@ class V2RayService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('last_connection_time');
     } catch (e) {
-      print('Error disconnecting from V2Ray: $e');
+      debugPrint('Error disconnecting from V2Ray: $e');
     }
   }
 
@@ -296,14 +328,14 @@ class V2RayService extends ChangeNotifier {
     try {
       // Check if VPN is actually running
       final delay = await _flutterV2ray.getConnectedServerDelay();
-      final isConnected = delay != null && delay >= 0;
+      final isConnected = delay >= 0;
 
       if (isConnected) {
         // Try to load the saved active config
         final savedConfig = await _loadActiveConfig();
         if (savedConfig != null) {
           _activeConfig = savedConfig;
-          print('Restored active config: ${savedConfig.remark}');
+          debugPrint('Restored active config: ${savedConfig.remark}');
 
           // Load the last connection time from SharedPreferences
           final prefs = await SharedPreferences.getInstance();
