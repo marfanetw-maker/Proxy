@@ -31,7 +31,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
   Future<void> _checkForUpdates() async {
     final updateService = UpdateService();
     final update = await updateService.checkForUpdates();
-    
+
     setState(() {
       _update = update;
       _isLoading = false;
@@ -42,9 +42,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open $url')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not open $url')));
       }
     }
   }
@@ -61,12 +61,12 @@ class _ToolsScreenState extends State<ToolsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          if (_update != null)
-            _buildUpdateCard(context, _update!),
+          if (_update != null) _buildUpdateCard(context, _update!),
           _buildToolCard(
             context,
             title: 'Subscription Manager',
-            description: 'Add, edit, delete and update your V2Ray subscriptions',
+            description:
+                'Add, edit, delete and update your V2Ray subscriptions',
             icon: Icons.subscriptions,
             onTap: () {
               Navigator.push(
@@ -80,21 +80,21 @@ class _ToolsScreenState extends State<ToolsScreen> {
           _buildToolCard(
             context,
             title: 'IP Information',
-            description: 'View detailed information about your current IP address',
+            description:
+                'View detailed information about your current IP address',
             icon: Icons.public,
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const IpInfoScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const IpInfoScreen()),
               );
             },
           ),
           _buildToolCard(
             context,
             title: 'Host Checker',
-            description: 'Check status, response time and details of any web host',
+            description:
+                'Check status, response time and details of any web host',
             icon: Icons.link,
             onTap: () {
               Navigator.push(
@@ -153,11 +153,13 @@ class _ToolsScreenState extends State<ToolsScreen> {
     );
   }
 
-  Widget _buildToolCard(BuildContext context,
-      {required String title,
-      required String description,
-      required IconData icon,
-      required VoidCallback onTap}) {
+  Widget _buildToolCard(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       color: AppTheme.cardDark,
@@ -176,11 +178,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   color: AppTheme.primaryGreen.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppTheme.primaryGreen,
-                  size: 28,
-                ),
+                child: Icon(icon, color: AppTheme.primaryGreen, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -198,10 +196,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[400],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                     ),
                   ],
                 ),
@@ -217,7 +212,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
       ),
     );
   }
-  
+
   Widget _buildUpdateCard(BuildContext context, AppUpdate update) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
@@ -259,10 +254,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'New version: ${update.version}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[400],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                       ),
                     ],
                   ),
@@ -270,27 +262,19 @@ class _ToolsScreenState extends State<ToolsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              update.messText,
-              style: const TextStyle(color: Colors.white),
-            ),
+            Text(update.messText, style: const TextStyle(color: Colors.white)),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   'Current version: ${AppUpdate.currentAppVersion}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[400],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                 ),
                 const Spacer(),
                 ElevatedButton(
                   onPressed: () => _launchUrl(update.url.trim()),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                   child: const Text('Update Now'),
                 ),
               ],

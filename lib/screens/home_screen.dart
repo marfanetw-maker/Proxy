@@ -318,8 +318,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // Cached ping value and loading state
   // Ping functionality removed
 
-
-
   // Server ping row removed
 
   Widget _buildIpInfoRow(IpInfo ipInfo) {

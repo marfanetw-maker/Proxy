@@ -191,7 +191,8 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         final defaultSubscription = Subscription(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           name: 'Default Subscription',
-          url: 'https://raw.githubusercontent.com/darkvpnapp/CloudflarePlus/refs/heads/main/proxy',
+          url:
+              'https://raw.githubusercontent.com/darkvpnapp/CloudflarePlus/refs/heads/main/proxy',
           lastUpdated: DateTime.now(),
           configIds: [],
         );

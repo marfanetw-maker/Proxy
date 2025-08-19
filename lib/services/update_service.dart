@@ -4,8 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_application_1/models/app_update.dart';
 
 class UpdateService {
-  static const String updateUrl = 'https://raw.githubusercontent.com/code3-dev/ProxyCloud-GUI/refs/heads/main/config/mobile.json';
-  
+  static const String updateUrl =
+      'https://raw.githubusercontent.com/code3-dev/ProxyCloud-GUI/refs/heads/main/config/mobile.json';
+
   // Check for updates
   Future<AppUpdate?> checkForUpdates() async {
     try {
@@ -22,40 +23,41 @@ class UpdateService {
       return null;
     }
   }
-  
+
   // Show update dialog
   void showUpdateDialog(BuildContext context, AppUpdate update) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Update Available'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('New version: ${update.version}'),
-            const SizedBox(height: 8),
-            Text(update.messText),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Later'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Update Available'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('New version: ${update.version}'),
+                const SizedBox(height: 8),
+                Text(update.messText),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Later'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _launchUrl(update.url.trim());
+                },
+                child: const Text('Download'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _launchUrl(update.url.trim());
-            },
-            child: const Text('Download'),
-          ),
-        ],
-      ),
     );
   }
-  
+
   // Launch URL
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);

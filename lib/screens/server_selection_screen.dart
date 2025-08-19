@@ -35,13 +35,13 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       StreamController<String>.broadcast();
   final Map<String, bool> _cancelPingTasks = {};
   Timer? _batchTimeoutTimer;
+  bool _sortByPing = false; // New variable for ping sorting
+  bool _sortAscending = true; // New variable for sort direction
+  bool _isPingingServers = false; // New variable for ping loading state
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAllPings();
-    });
   }
 
   @override
@@ -83,14 +83,28 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   ) async {
     if (_cancelPingTasks[config.id] == true) return;
 
-    setState(() {
-      for (var relatedConfig in relatedConfigs) {
-        _loadingPings[relatedConfig.id] = true;
-      }
-    });
+    // Safely update loading state
+    if (mounted) {
+      setState(() {
+        for (var relatedConfig in relatedConfigs) {
+          _loadingPings[relatedConfig.id] = true;
+        }
+      });
+    }
 
     try {
-      final ping = await _v2rayService.getServerDelay(config);
+      // Add timeout to prevent hanging
+      final ping = await _v2rayService
+          .getServerDelay(config)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('Ping timeout for server ${config.remark}');
+              return null; // Return null on timeout
+            },
+          );
+
+      // Check if widget is still mounted and task wasn't cancelled
       if (mounted && _cancelPingTasks[config.id] != true) {
         setState(() {
           for (var relatedConfig in relatedConfigs) {
@@ -100,6 +114,8 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         });
       }
     } catch (e) {
+      debugPrint('Error pinging server ${config.remark}: $e');
+      // Safely handle error state
       if (mounted) {
         setState(() {
           for (var relatedConfig in relatedConfigs) {
@@ -114,7 +130,15 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   Future<int?> _pingServer(V2RayConfig config) async {
     try {
       if (_cancelPingTasks[config.id] == true) return null;
-      return await _v2rayService.getServerDelay(config);
+      return await _v2rayService
+          .getServerDelay(config)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('Ping timeout for server ${config.remark}');
+              return null; // Return null on timeout
+            },
+          );
     } catch (e) {
       debugPrint('Error pinging server ${config.remark}: $e');
       return null;
@@ -199,28 +223,67 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     Completer<V2RayConfig?> completer,
   ) async {
     try {
+      if (!mounted) return;
       _autoConnectStatusStream.add('Testing ${config.remark}...');
+
+      // Add timeout to prevent hanging
       final ping = await _pingServer(config);
 
+      // Check if completer is already completed or widget is unmounted
       if (completer.isCompleted || !mounted) return;
 
-      setState(() {
-        _pings[config.id] = ping;
-        _loadingPings[config.id] = false;
-      });
+      // Safely update state
+      if (mounted) {
+        setState(() {
+          _pings[config.id] = ping;
+          _loadingPings[config.id] = false;
+        });
+      }
 
+      // Get all configs that have been pinged so far
+      final pingedConfigs = widget.configs.where((c) => _pings.containsKey(c.id)).toList();
+      
       if (ping != null && ping > 0) {
-        _autoConnectStatusStream.add(
-          '${config.remark} responded with ${ping}ms',
-        );
-        _cancelAllPingTasks();
-        if (!completer.isCompleted) {
-          completer.complete(config);
+        if (mounted) {
+          _autoConnectStatusStream.add(
+            '${config.remark} responded with ${ping}ms',
+          );
+        }
+        
+        // If we have pinged 50 servers or all servers
+        if (pingedConfigs.length >= 50 || pingedConfigs.length == widget.configs.length) {
+          // Find the best ping among the current batch
+          V2RayConfig? bestConfig = config;
+          int bestPing = ping;
+          
+          for (var c in pingedConfigs) {
+            final currentPing = _pings[c.id] ?? -1;
+            if (currentPing > 0 && currentPing < bestPing) {
+              bestPing = currentPing;
+              bestConfig = c;
+            }
+          }
+          
+          _cancelAllPingTasks();
+          if (!completer.isCompleted) {
+            completer.complete(bestConfig);
+          }
         }
       } else {
-        _autoConnectStatusStream.add('${config.remark} failed or timed out');
+        if (mounted) {
+          _autoConnectStatusStream.add('${config.remark} failed or timed out');
+        }
+        
+        // If all configs in current batch failed, move to next batch
+        if (pingedConfigs.length >= 50) {
+          _pings.clear();
+          if (!completer.isCompleted) {
+            completer.complete(null);
+          }
+        }
       }
     } catch (e) {
+      debugPrint('Error in _processPingTask for ${config.remark}: $e');
       if (!completer.isCompleted && mounted) {
         _autoConnectStatusStream.add(
           'Error testing ${config.remark}: ${e.toString()}',
@@ -238,14 +301,95 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     final provider = Provider.of<V2RayProvider>(context, listen: false);
     final subscriptions = provider.subscriptions;
 
-    final filterOptions = [
-      'All',
-      ...subscriptions.map((sub) => sub.name),
+    final filterOptions = ['All', ...subscriptions.map((sub) => sub.name)];
+
+    // Add sort and ping buttons in the app bar actions
+    final List<Widget> appBarActions = [
+      // Ping button
+      IconButton(
+        icon:
+            _isPingingServers
+                ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppTheme.primaryGreen,
+                    ),
+                  ),
+                )
+                : const Icon(Icons.network_check),
+        tooltip: 'Test Ping',
+        onPressed:
+            _isPingingServers
+                ? null
+                : () async {
+                  setState(() {
+                    _isPingingServers = true;
+                    // Clear existing pings when starting new test
+                    _pings.clear();
+                  });
+
+                  try {
+                    if (_selectedFilter == 'All') {
+                      await _loadAllPings();
+                    } else {
+                      final subscription = subscriptions.firstWhere(
+                        (sub) => sub.name == _selectedFilter,
+                        orElse:
+                            () => Subscription(
+                              id: '',
+                              name: '',
+                              url: '',
+                              lastUpdated: DateTime.now(),
+                              configIds: [],
+                            ),
+                      );
+                      final configsToTest =
+                          widget.configs
+                              .where(
+                                (config) =>
+                                    subscription.configIds.contains(config.id),
+                              )
+                              .toList();
+                      for (var config in configsToTest) {
+                        if (!mounted) break;
+                        await _loadPingForConfig(config, [config]);
+                      }
+                    }
+                  } finally {
+                    if (mounted) {
+                      setState(() {
+                        _isPingingServers = false;
+                      });
+                    }
+                  }
+                },
+      ),
+      // Sort button
+      IconButton(
+        icon: Icon(
+          _sortByPing ? Icons.sort : Icons.sort_outlined,
+          color: _sortByPing ? AppTheme.primaryGreen : null,
+        ),
+        tooltip: 'Sort by Ping',
+        onPressed: () {
+          setState(() {
+            if (_sortByPing) {
+              _sortAscending = !_sortAscending;
+            } else {
+              _sortByPing = true;
+              _sortAscending = true;
+            }
+          });
+        },
+      ),
     ];
 
     List<V2RayConfig> filteredConfigs = [];
     if (_selectedFilter == 'All') {
-      filteredConfigs = widget.configs;
+      filteredConfigs = List.from(widget.configs);
     } else {
       final subscription = subscriptions.firstWhere(
         (sub) => sub.name == _selectedFilter,
@@ -264,6 +408,22 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
               .toList();
     }
 
+    // Sort configs by ping if enabled
+    if (_sortByPing) {
+      filteredConfigs.sort((a, b) {
+        final pingA = _pings[a.id];
+        final pingB = _pings[b.id];
+
+        // Handle null pings - put them at the bottom
+        if (pingA == null && pingB == null) return 0;
+        if (pingA == null) return 1;
+        if (pingB == null) return -1;
+
+        // Sort by ping value
+        return _sortAscending ? pingA.compareTo(pingB) : pingB.compareTo(pingA);
+      });
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.primaryDark,
       appBar: AppBar(
@@ -271,6 +431,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         backgroundColor: AppTheme.primaryDark,
         elevation: 0,
         actions: [
+          ...appBarActions,
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () async {

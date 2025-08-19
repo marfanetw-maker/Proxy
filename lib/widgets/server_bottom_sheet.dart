@@ -96,10 +96,7 @@ class _ServerBottomSheetState extends State<ServerBottomSheet> {
               children: [
                 const Text(
                   'Select Server',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Row(
                   children: [
@@ -125,19 +122,28 @@ class _ServerBottomSheetState extends State<ServerBottomSheet> {
                 final isSelected = widget.selectedConfig?.id == config.id;
                 final isLoadingPing = _loadingPings[config.id] ?? false;
                 final ping = _pings[config.id];
-                
+
                 return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  tileColor: isSelected ? AppTheme.primaryGreen.withOpacity(0.1) : null,
+                  tileColor:
+                      isSelected
+                          ? AppTheme.primaryGreen.withOpacity(0.1)
+                          : null,
                   leading: Container(
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isSelected ? AppTheme.primaryGreen : AppTheme.textGrey,
+                      color:
+                          isSelected
+                              ? AppTheme.primaryGreen
+                              : AppTheme.textGrey,
                     ),
                   ),
                   title: Row(
@@ -146,7 +152,10 @@ class _ServerBottomSheetState extends State<ServerBottomSheet> {
                         child: Text(
                           config.remark,
                           style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight:
+                                isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -184,34 +193,42 @@ class _ServerBottomSheetState extends State<ServerBottomSheet> {
                       ),
                     ],
                   ),
-                  onTap: widget.isConnecting
-                      ? null
-                      : () async {
-                          // Get the provider to check connection status
-                          final provider = Provider.of<V2RayProvider>(context, listen: false);
-                          
-                          // Check if already connected to VPN
-                          if (provider.activeConfig != null) {
-                            // Show popup to inform user to disconnect first
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Connection Active'),
-                                content: const Text('Please disconnect from VPN before selecting a different server.'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('OK'),
-                                  ),
-                                ],
-                              ),
+                  onTap:
+                      widget.isConnecting
+                          ? null
+                          : () async {
+                            // Get the provider to check connection status
+                            final provider = Provider.of<V2RayProvider>(
+                              context,
+                              listen: false,
                             );
-                          } else {
-                            // Not connected, proceed with selection
-                            await widget.onConfigSelected(config);
-                            Navigator.pop(context);
-                          }
-                        },
+
+                            // Check if already connected to VPN
+                            if (provider.activeConfig != null) {
+                              // Show popup to inform user to disconnect first
+                              showDialog(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: const Text('Connection Active'),
+                                      content: const Text(
+                                        'Please disconnect from VPN before selecting a different server.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                            } else {
+                              // Not connected, proceed with selection
+                              await widget.onConfigSelected(config);
+                              Navigator.pop(context);
+                            }
+                          },
                   // Removed onLongPress handler for server pinging as requested
                 );
               },
@@ -234,42 +251,47 @@ void showServerSelector({
 }) {
   // Get the provider to check connection status
   final provider = Provider.of<V2RayProvider>(context, listen: false);
-  
+
   // Check if already connected to VPN
   if (provider.activeConfig != null) {
     // Show popup to inform user to disconnect first
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Connection Active'),
-        content: const Text('Please disconnect from VPN before selecting a different server.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Connection Active'),
+            content: const Text(
+              'Please disconnect from VPN before selecting a different server.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
     return; // Don't show the bottom sheet
   }
-  
+
   // Not connected, show server selector
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (context, scrollController) => ServerBottomSheet(
-        configs: configs,
-        selectedConfig: selectedConfig,
-        isConnecting: isConnecting,
-        onConfigSelected: onConfigSelected,
-      ),
-    ),
+    builder:
+        (context) => DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder:
+              (context, scrollController) => ServerBottomSheet(
+                configs: configs,
+                selectedConfig: selectedConfig,
+                isConnecting: isConnecting,
+                onConfigSelected: onConfigSelected,
+              ),
+        ),
   );
 }

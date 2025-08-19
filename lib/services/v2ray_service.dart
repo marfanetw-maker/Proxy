@@ -76,24 +76,29 @@ class V2RayService extends ChangeNotifier {
   // Ping cache
   final Map<String, int?> _pingCache = {};
   final Map<String, bool> _pingInProgress = {};
-  
+
   // Get list of installed apps (Android only)
   Future<List<Map<String, dynamic>>> getInstalledApps() async {
     try {
       // On Android, use the method channel to get installed apps
       if (defaultTargetPlatform == TargetPlatform.android) {
         const platform = MethodChannel('com.cloud.pira/app_list');
-        final List<dynamic> result = await platform.invokeMethod('getInstalledApps');
-        
+        final List<dynamic> result = await platform.invokeMethod(
+          'getInstalledApps',
+        );
+
         // Convert the result to a List<Map<String, dynamic>>
-        final List<Map<String, dynamic>> appList = result
-            .map((app) => {
-              'packageName': app['packageName'] as String,
-              'name': app['name'] as String,
-              'isSystemApp': app['isSystemApp'] as bool,
-            })
-            .toList();
-            
+        final List<Map<String, dynamic>> appList =
+            result
+                .map(
+                  (app) => {
+                    'packageName': app['packageName'] as String,
+                    'name': app['name'] as String,
+                    'isSystemApp': app['isSystemApp'] as bool,
+                  },
+                )
+                .toList();
+
         return appList;
       } else {
         // Return empty list on non-Android platforms
@@ -217,14 +222,15 @@ class V2RayService extends ChangeNotifier {
 
       // Get blocked apps from shared preferences
       final blockedAppsList = prefs.getStringList('blocked_apps');
-      
+
       // Start V2Ray in VPN mode
       await _flutterV2ray.startV2Ray(
         remark: parser.remark,
         config: parser.getFullConfiguration(),
         blockedApps: blockedAppsList, // Use saved blocked apps list
         bypassSubnets: bypassSubnets,
-        proxyOnly: status_proxy, // Use proxy mode based on status_proxy parameter
+        proxyOnly:
+            status_proxy, // Use proxy mode based on status_proxy parameter
         notificationDisconnectButtonName: "DISCONNECT",
       );
 
