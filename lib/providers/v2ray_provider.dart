@@ -50,9 +50,6 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       // Load subscriptions
       await loadSubscriptions();
 
-      // Load servers from the default URL without creating a default subscription
-      await fetchServers();
-
       // Update all subscriptions on app start
       await updateAllSubscriptions();
 
@@ -129,20 +126,13 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> fetchServers({String? customUrl}) async {
-    // Check if we have a default subscription - if so, skip fetching default servers
-    bool hasDefaultSubscription = _subscriptions.any((sub) => sub.name == "Default Subscription");
-    if (hasDefaultSubscription && customUrl == null) {
-      // Skip fetching default servers if we already have a default subscription
-      return;
-    }
-    
+  Future<void> fetchServers({required String customUrl}) async {
     _isLoadingServers = true;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      // Fetch servers from service
+      // Fetch servers from service using the provided custom URL
       final servers = await _serverService.fetchServers(customUrl: customUrl);
 
       if (servers.isNotEmpty) {
@@ -195,6 +185,19 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     _setLoading(true);
     try {
       _subscriptions = await _v2rayService.loadSubscriptions();
+
+      // Create default subscription if no subscriptions exist
+      if (_subscriptions.isEmpty) {
+        final defaultSubscription = Subscription(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: 'Default Subscription',
+          url: '',
+          lastUpdated: DateTime.now(),
+          configIds: [],
+        );
+        _subscriptions.add(defaultSubscription);
+        await _v2rayService.saveSubscriptions(_subscriptions);
+      }
 
       // Ensure configs are loaded and match subscription config IDs
       if (_configs.isEmpty) {
