@@ -290,46 +290,20 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         });
       }
 
-      // Get all configs that have been pinged so far
-      final pingedConfigs = widget.configs.where((c) => _pings.containsKey(c.id)).toList();
-      
-      if (ping != null && ping > 0) {
+      // If we found a server with ping (not -1, not 0), select it immediately
+      if (ping != null && ping > 0) {  // Added upper limit check
         if (mounted) {
           _autoConnectStatusStream.add(
             '${config.remark} responded with ${ping}ms',
           );
-        }
-        
-        // If we have pinged 50 servers or all servers
-        if (pingedConfigs.length >= 50 || pingedConfigs.length == widget.configs.length) {
-          // Find the best ping among the current batch
-          V2RayConfig? bestConfig = config;
-          int bestPing = ping;
-          
-          for (var c in pingedConfigs) {
-            final currentPing = _pings[c.id] ?? -1;
-            if (currentPing > 0 && currentPing < bestPing) {
-              bestPing = currentPing;
-              bestConfig = c;
-            }
-          }
-          
           _cancelAllPingTasks();
           if (!completer.isCompleted) {
-            completer.complete(bestConfig);
+            completer.complete(config);
           }
         }
       } else {
         if (mounted) {
           _autoConnectStatusStream.add('${config.remark} failed or timed out');
-        }
-        
-        // If all configs in current batch failed, move to next batch
-        if (pingedConfigs.length >= 50) {
-          _pings.clear();
-          if (!completer.isCompleted) {
-            completer.complete(null);
-          }
         }
       }
     } catch (e) {
@@ -384,6 +358,20 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                   try {
                     if (_selectedFilter == 'All') {
                       await _loadAllPings();
+                    } else if (_selectedFilter == 'Local') {
+                      // Get local configs (not in any subscription)
+                      final allSubscriptionConfigIds = subscriptions
+                          .expand((sub) => sub.configIds)
+                          .toSet();
+                      final localConfigs = widget.configs
+                          .where((config) => !allSubscriptionConfigIds.contains(config.id))
+                          .toList();
+                      
+                      // Test pings for local configs
+                      for (var config in localConfigs) {
+                        if (!mounted) break;
+                        await _loadPingForConfig(config, [config]);
+                      }
                     } else {
                       final subscription = subscriptions.firstWhere(
                         (sub) => sub.name == _selectedFilter,
