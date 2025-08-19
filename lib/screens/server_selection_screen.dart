@@ -214,45 +214,63 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         );
 
         final completer = Completer<V2RayConfig?>();
-        _batchTimeoutTimer = Timer(const Duration(seconds: 20), () {
+        
+        // Create a timeout that won't crash the app
+        _batchTimeoutTimer?.cancel();
+        _batchTimeoutTimer = Timer(const Duration(seconds: 10), () {
           if (!completer.isCompleted) {
-            _autoConnectStatusStream.add(
-              'Batch timeout reached, moving to next batch',
-            );
+            debugPrint('Batch timeout reached, moving to next batch');
+            _autoConnectStatusStream.add('Batch timeout reached, trying next servers...');
             completer.complete(null);
           }
         });
 
-        final pingTasks =
-            currentBatch
-                .map((config) => _processPingTask(config, completer))
-                .toList();
-        selectedConfig = await completer.future;
-
-        _batchTimeoutTimer?.cancel();
-        _batchTimeoutTimer = null;
+        try {
+          final pingTasks = currentBatch.map((config) => _processPingTask(config, completer)).toList();
+          selectedConfig = await completer.future;
+          _batchTimeoutTimer?.cancel();
+        } catch (e) {
+          debugPrint('Error in batch processing: $e');
+          // Don't rethrow, just continue to next batch
+          continue;
+        }
       }
 
-      if (selectedConfig != null && mounted) {
+      // Clean up timer
+      _batchTimeoutTimer?.cancel();
+      _batchTimeoutTimer = null;
+
+      if (!mounted) return;
+
+      if (selectedConfig != null) {
         _autoConnectStatusStream.add(
           'Connecting to ${selectedConfig.remark} (${_pings[selectedConfig.id]}ms)',
         );
-        await widget.onConfigSelected(selectedConfig);
-        if (mounted && Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-          Navigator.of(context).pop();
+        try {
+          await widget.onConfigSelected(selectedConfig);
+          if (mounted && Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+          }
+        } catch (e) {
+          debugPrint('Error connecting to selected server: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to connect: ${e.toString()}')),
+            );
+          }
         }
       } else {
-        _autoConnectStatusStream.add('No suitable server found');
-        if (mounted && Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'No server with valid ping found. Please try again.',
+        if (mounted) {
+          _autoConnectStatusStream.add('No suitable server found');
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No server with valid ping found. Please try again.'),
               ),
-            ),
-          );
+            );
+          }
         }
       }
     } catch (e) {
@@ -260,11 +278,14 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error connecting to server: ${e.toString()}'),
-          ),
+          SnackBar(content: Text('Error during auto-select: ${e.toString()}')),
         );
       }
+    } finally {
+      // Ensure cleanup happens
+      _batchTimeoutTimer?.cancel();
+      _batchTimeoutTimer = null;
+      _cancelAllPingTasks();
     }
   }
 
@@ -272,12 +293,19 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     V2RayConfig config,
     Completer<V2RayConfig?> completer,
   ) async {
+    if (!mounted || completer.isCompleted) return;
+
     try {
-      if (!mounted) return;
       _autoConnectStatusStream.add('Testing ${config.remark}...');
 
       // Add timeout to prevent hanging
-      final ping = await _pingServer(config);
+      final ping = await _pingServer(config).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('Ping timeout for server ${config.remark}');
+          return null;
+        },
+      );
 
       // Check if completer is already completed or widget is unmounted
       if (completer.isCompleted || !mounted) return;
@@ -291,15 +319,13 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       }
 
       // If we found a server with ping (not -1, not 0), select it immediately
-      if (ping != null && ping > 0) {  // Added upper limit check
-        if (mounted) {
+      if (ping != null && ping > 0) {
+        if (mounted && !completer.isCompleted) {
           _autoConnectStatusStream.add(
             '${config.remark} responded with ${ping}ms',
           );
           _cancelAllPingTasks();
-          if (!completer.isCompleted) {
-            completer.complete(config);
-          }
+          completer.complete(config);
         }
       } else {
         if (mounted) {
@@ -308,11 +334,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       }
     } catch (e) {
       debugPrint('Error in _processPingTask for ${config.remark}: $e');
-      if (!completer.isCompleted && mounted) {
-        _autoConnectStatusStream.add(
-          'Error testing ${config.remark}: ${e.toString()}',
-        );
-      }
+      // Don't complete the completer on error, let other servers try
     }
   }
 
