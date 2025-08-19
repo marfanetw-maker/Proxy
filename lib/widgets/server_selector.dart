@@ -250,7 +250,11 @@ class _EmptyServerCard extends StatelessWidget {
                     listen: false,
                   );
                   try {
-                    await provider.fetchServers();
+                    // Since we no longer have default servers, we'll show a message
+                    ErrorSnackbar.show(
+                      context,
+                      'Please add a subscription to get servers',
+                    );
 
                     // Check if there was an error
                     if (provider.errorMessage.isNotEmpty) {
