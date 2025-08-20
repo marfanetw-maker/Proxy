@@ -6,7 +6,7 @@ class AppUpdate {
   final String messText;
 
   // Current app version - manually set
-  static const String currentAppVersion = '2.1.5';
+  static const String currentAppVersion = '2.2.0';
 
   AppUpdate({required this.version, required this.url, required this.messText});
 

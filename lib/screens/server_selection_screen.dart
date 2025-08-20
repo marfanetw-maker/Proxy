@@ -118,7 +118,9 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   }
 
   Future<void> _loadAllPings() async {
-    final groupedConfigs = _groupConfigsByHost(widget.configs);
+    final provider = Provider.of<V2RayProvider>(context, listen: false);
+    final configs = provider.configs;
+    final groupedConfigs = _groupConfigsByHost(configs);
     for (var host in groupedConfigs.keys) {
       if (!mounted) return;
       final configsForHost = groupedConfigs[host]!;
@@ -344,8 +346,9 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<V2RayProvider>(context, listen: false);
+    final provider = Provider.of<V2RayProvider>(context, listen: true);
     final subscriptions = provider.subscriptions;
+    final configs = provider.configs;
 
     final filterOptions = ['All', 'Local', ...subscriptions.map((sub) => sub.name)];
 
@@ -385,7 +388,9 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                       final allSubscriptionConfigIds = subscriptions
                           .expand((sub) => sub.configIds)
                           .toSet();
-                      final localConfigs = widget.configs
+                      final provider = Provider.of<V2RayProvider>(context, listen: false);
+                      final allConfigs = provider.configs;
+                      final localConfigs = allConfigs
                           .where((config) => !allSubscriptionConfigIds.contains(config.id))
                           .toList();
                       
@@ -406,8 +411,10 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                               configIds: [],
                             ),
                       );
+                      final provider = Provider.of<V2RayProvider>(context, listen: false);
+                      final allConfigs = provider.configs;
                       final configsToTest =
-                          widget.configs
+                          allConfigs
                               .where(
                                 (config) =>
                                     subscription.configIds.contains(config.id),
@@ -449,13 +456,13 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
     List<V2RayConfig> filteredConfigs = [];
     if (_selectedFilter == 'All') {
-      filteredConfigs = List.from(widget.configs);
+      filteredConfigs = List.from(configs);
     } else if (_selectedFilter == 'Local') {
       // Filter configs that don't belong to any subscription
       final allSubscriptionConfigIds = subscriptions
           .expand((sub) => sub.configIds)
           .toSet();
-      filteredConfigs = widget.configs
+      filteredConfigs = configs
           .where((config) => !allSubscriptionConfigIds.contains(config.id))
           .toList();
     } else {
@@ -471,7 +478,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             ),
       );
       filteredConfigs =
-          widget.configs
+          configs
               .where((config) => subscription.configIds.contains(config.id))
               .toList();
     }
@@ -482,13 +489,17 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         final pingA = _pings[a.id];
         final pingB = _pings[b.id];
 
-        // Handle null pings - put them at the bottom
-        if (pingA == null && pingB == null) return 0;
-        if (pingA == null) return 1;
-        if (pingB == null) return -1;
+        // Check if ping values are valid (not null, -1, or 0)
+        final isValidPingA = pingA != null && pingA > 0;
+        final isValidPingB = pingB != null && pingB > 0;
 
-        // Sort by ping value
-        return _sortAscending ? pingA.compareTo(pingB) : pingB.compareTo(pingA);
+        // Handle invalid pings - put them at the bottom
+        if (!isValidPingA && !isValidPingB) return 0;
+        if (!isValidPingA) return 1;
+        if (!isValidPingB) return -1;
+
+        // Sort by ping value (only valid pings reach here)
+        return _sortAscending ? pingA!.compareTo(pingB!) : pingB!.compareTo(pingA!);
       });
     }
 
@@ -783,7 +794,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
                         final config = filteredConfigs[index - 1];
                         final isSelected =
-                            widget.selectedConfig?.id == config.id;
+                            provider.selectedConfig?.id == config.id;
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
