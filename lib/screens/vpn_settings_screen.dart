@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/error_snackbar.dart';
 
 class VpnSettingsScreen extends StatefulWidget {
-  const VpnSettingsScreen({Key? key}) : super(key: key);
+  const VpnSettingsScreen({super.key});
 
   @override
   State<VpnSettingsScreen> createState() => _VpnSettingsScreenState();
@@ -58,7 +58,7 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
           // Save the updated config back to SharedPreferences
           await prefs.setString('active_config', jsonEncode(configMap));
         } catch (e) {
-          print('Error updating active config: $e');
+          debugPrint('Error updating active config: $e');
         }
       }
 

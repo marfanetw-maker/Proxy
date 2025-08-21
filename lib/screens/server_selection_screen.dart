@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,38 @@ import 'package:flutter_application_1/models/subscription.dart';
 import 'package:flutter_application_1/providers/v2ray_provider.dart';
 import 'package:flutter_application_1/services/v2ray_service.dart';
 import 'package:flutter_application_1/theme/app_theme.dart';
+
+// Modern cancellation token implementation
+class CancelToken {
+  bool _isCancelled = false;
+  final Completer<void> _completer = Completer<void>();
+  
+  bool get isCancelled => _isCancelled;
+  Future<void> get future => _completer.future;
+  
+  void cancel() {
+    if (!_isCancelled) {
+      _isCancelled = true;
+      if (!_completer.isCompleted) {
+        _completer.complete();
+      }
+    }
+  }
+  
+  void throwIfCancelled() {
+    if (_isCancelled) {
+      throw CancelException();
+    }
+  }
+}
+
+class CancelException implements Exception {
+  final String message;
+  CancelException([this.message = 'Operation was cancelled']);
+  
+  @override
+  String toString() => 'CancelException: $message';
+}
 
 class ServerSelectionScreen extends StatefulWidget {
   final List<V2RayConfig> configs;
@@ -82,24 +115,79 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       );
     }
   }
+  // Modern async handling with proper cancellation
+  final Map<String, CancelToken> _pingCancelTokens = {};
+  final Map<String, Completer<int?>> _pendingPings = {};
+  CancelToken? _batchCancelToken;
+  CancelToken? _autoSelectCancelToken;
+  bool _sortByPing = false;
+  bool _sortAscending = true;
+  bool _isPingingServers = false;
+  
+  // Missing fields that are referenced in the code
   final Map<String, bool> _cancelPingTasks = {};
   Timer? _batchTimeoutTimer;
-  bool _sortByPing = false; // New variable for ping sorting
-  bool _sortAscending = true; // New variable for sort direction
-  bool _isPingingServers = false; // New variable for ping loading state
+  
+  // Retry configuration
+  static const int _maxRetries = 3;
+  static const Duration _baseRetryDelay = Duration(seconds: 2);
+  static const Duration _pingTimeout = Duration(seconds: 15); // Increased timeout
+  static const int _maxConcurrentPings = 5; // Limit concurrent operations
 
   @override
   void initState() {
     super.initState();
     _selectedFilter = 'All';
+    // Load cached ping results immediately
+    _loadCachedPings();
+  }
+  
+  void _loadCachedPings() {
+    final provider = Provider.of<V2RayProvider>(context, listen: false);
+    final configs = provider.configs;
+    
+    // Load cached ping results for all servers
+    for (final config in configs) {
+      final cachedPing = _v2rayService.getCachedPing(config.id);
+      if (cachedPing != null) {
+        setState(() {
+          _pings[config.id] = cachedPing;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    // Cancel all active operations
+    _cancelAllAsyncOperations();
     _autoConnectStatusStream.close();
-    _batchTimeoutTimer?.cancel();
-    _cancelAllPingTasks();
     super.dispose();
+  }
+  
+  // Modern lifecycle management
+  void _cancelAllAsyncOperations() {
+    // Cancel all ping operations
+    for (final token in _pingCancelTokens.values) {
+      token.cancel();
+    }
+    _pingCancelTokens.clear();
+    
+    // Cancel batch operations
+    _batchCancelToken?.cancel();
+    _batchCancelToken = null;
+    
+    // Cancel auto-select operations
+    _autoSelectCancelToken?.cancel();
+    _autoSelectCancelToken = null;
+    
+    // Complete any pending ping operations
+    for (final completer in _pendingPings.values) {
+      if (!completer.isCompleted) {
+        completer.complete(null);
+      }
+    }
+    _pendingPings.clear();
   }
 
   Map<String, List<V2RayConfig>> _groupConfigsByHost(
@@ -117,15 +205,50 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     return groupedConfigs;
   }
 
-  Future<void> _loadAllPings() async {
-    final provider = Provider.of<V2RayProvider>(context, listen: false);
-    final configs = provider.configs;
-    final groupedConfigs = _groupConfigsByHost(configs);
-    for (var host in groupedConfigs.keys) {
-      if (!mounted) return;
-      final configsForHost = groupedConfigs[host]!;
-      final representativeConfig = configsForHost.first;
-      await _loadPingForConfig(representativeConfig, configsForHost);
+  // Modern concurrent ping testing with proper limits and error handling  
+  Future<void> _loadPingsForConfigs(List<V2RayConfig> configs) async {
+    if (!mounted || configs.isEmpty) return;
+    
+    try {
+      // Get servers that need ping testing (not cached or expired)
+      final serversNeedingPing = _v2rayService.getServersNeedingPing(configs);
+      
+      if (serversNeedingPing.isEmpty) {
+        return; // All servers have valid cached pings
+      }
+      
+      // Process configs in controlled batches to avoid overwhelming the system
+      final batches = <List<V2RayConfig>>[];
+      for (int i = 0; i < serversNeedingPing.length; i += _maxConcurrentPings) {
+        batches.add(
+          serversNeedingPing.skip(i).take(_maxConcurrentPings).toList(),
+        );
+      }
+      
+      // Process each batch sequentially but ping configs within batch concurrently
+      for (final batch in batches) {
+        if (!mounted) break;
+        
+        await Future.wait(
+          batch.map((config) => _pingServerWithRetry(config)),
+          eagerError: false,
+        );
+        
+        // Small delay between batches to avoid overwhelming the system
+        if (batches.last != batch && mounted) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in _loadPingsForConfigs: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error testing servers: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -167,8 +290,17 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       if (mounted && _cancelPingTasks[config.id] != true) {
         setState(() {
           for (var relatedConfig in relatedConfigs) {
+            // Store ping result, even if null or invalid, to show proper state
             _pings[relatedConfig.id] = ping;
             _loadingPings[relatedConfig.id] = false;
+            
+            // Only cache valid ping results (positive numbers)
+            if (ping != null && ping > 0 && ping < 10000) {
+              _v2rayService.cachePingResult(relatedConfig.id, ping);
+            } else {
+              // For failed pings, cache a -1 to indicate "tested but failed"
+              _v2rayService.cachePingResult(relatedConfig.id, -1);
+            }
           }
         });
       }
@@ -184,6 +316,58 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         });
       }
     }
+  }
+
+  // Ping server with retry logic
+  Future<int?> _pingServerWithRetry(V2RayConfig config, {int maxRetries = 3}) async {
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Check if task was cancelled or widget unmounted
+        if (_cancelPingTasks[config.id] == true || !mounted) {
+          return null;
+        }
+
+        final ping = await _v2rayService
+            .getServerDelay(config)
+            .timeout(
+              const Duration(seconds: 8),
+              onTimeout: () => null,
+            );
+
+        if (ping != null && ping > 0) {
+          // Update state immediately on successful ping
+          if (mounted) {
+            setState(() {
+              _pings[config.id] = ping;
+              _loadingPings[config.id] = false;
+            });
+            // Cache the result
+            _v2rayService.cachePingResult(config.id, ping);
+          }
+          return ping;
+        }
+
+        // If ping failed, wait before retry (except for last attempt)
+        if (attempt < maxRetries - 1) {
+          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+        }
+      } catch (e) {
+        debugPrint('Ping attempt ${attempt + 1} failed for ${config.remark}: $e');
+        if (attempt < maxRetries - 1) {
+          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+        }
+      }
+    }
+
+    // All attempts failed
+    if (mounted) {
+      setState(() {
+        _pings[config.id] = -1; // Mark as failed
+        _loadingPings[config.id] = false;
+      });
+      _v2rayService.cachePingResult(config.id, -1);
+    }
+    return null;
   }
 
   Future<int?> _pingServer(V2RayConfig config) async {
@@ -472,6 +656,90 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     _cancelPingTasks.updateAll((key, value) => true);
   }
 
+  // Build appropriate ping indicator based on ping state
+  Widget _buildPingIndicator(String configId) {
+    final isLoading = _loadingPings[configId] == true;
+    final ping = _pings[configId];
+    
+    if (isLoading) {
+      // Show loading spinner while ping is in progress
+      return const SizedBox(
+        width: 12,
+        height: 12,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(
+            AppTheme.primaryGreen,
+          ),
+        ),
+      );
+    }
+    
+    if (ping == null) {
+      // No ping data available (not tested yet)
+      return const SizedBox.shrink();
+    }
+    
+    if (ping == -1) {
+      // Ping failed or timed out
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Text(
+          'Failed',
+          style: TextStyle(
+            color: Colors.red,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+    
+    if (ping <= 0) {
+      // Invalid ping result
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.orange.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Text(
+          'Error',
+          style: TextStyle(
+            color: Colors.orange,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+    
+    // Valid ping result - show with color coding based on quality
+    Color pingColor;
+    if (ping <= 2000) {
+      pingColor = AppTheme.primaryGreen; // Excellent
+    } else if (ping <= 2500) {
+      pingColor = Colors.lightGreen; // Good
+    } else if (ping <= 3000) {
+      pingColor = Colors.yellow; // Fair
+    } else {
+      pingColor = Colors.orange; // Poor
+    }
+    
+    return Text(
+      '${ping}ms',
+      style: TextStyle(
+        color: pingColor,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<V2RayProvider>(context, listen: true);
@@ -509,14 +777,13 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                     if (mounted) {
                       setState(() {
                         _isPingingServers = true;
-                        // Clear existing pings when starting new test
-                        _pings.clear();
+                        // Don't clear existing pings - we'll update only uncached/expired ones
                         _loadingPings.clear();
                       });
                     }
 
                     if (_selectedFilter == 'All') {
-                      await _loadAllPings();
+                      await _loadPingsForConfigs(configs);
                     } else if (_selectedFilter == 'Local') {
                       // Get local configs (not in any subscription)
                       final allSubscriptionConfigIds = subscriptions
@@ -684,49 +951,6 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         elevation: 0,
         actions: [
           ...appBarActions,
-          IconButton(
-            icon: Icon(
-              Icons.network_ping,
-              color: _isPingingServers ? AppTheme.primaryGreen : null,
-            ),
-            onPressed: _isPingingServers ? null : () async {
-              setState(() {
-                _isPingingServers = true;
-              });
-              
-              try {
-                final provider = Provider.of<V2RayProvider>(context, listen: false);
-                await provider.pingAllServers();
-                
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Ping test completed!'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Ping test failed: $e'),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    _isPingingServers = false;
-                  });
-                }
-              }
-            },
-            tooltip: 'Ping All Servers',
-          ),
           if (_selectedFilter != 'Local')
             IconButton(
               icon: const Icon(Icons.refresh),
@@ -758,8 +982,14 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                   }
                 }
 
-                setState(() {});
-                await _loadAllPings();
+                // Clear ping cache since servers may have changed
+                _v2rayService.clearPingCache();
+                setState(() {
+                  _pings.clear(); // Clear local ping cache too
+                });
+                // Load cached pings again (will be empty now) and then test new servers
+                _loadCachedPings();
+                await _loadPingsForConfigs(provider.configs);
 
                 if (provider.errorMessage.isNotEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1122,31 +1352,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                                 ),
                                                 onPressed: () => _deleteLocalConfig(config),
                                               ),
-                                            _loadingPings[config.id] == true
-                                                ? const SizedBox(
-                                                  width: 12,
-                                                  height: 12,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                          Color
-                                                        >(
-                                                          AppTheme.primaryGreen,
-                                                        ),
-                                                  ),
-                                                )
-                                                : _pings[config.id] != null
-                                                ? Text(
-                                                  '${_pings[config.id]}ms',
-                                                  style: TextStyle(
-                                                    color:
-                                                        AppTheme.primaryGreen,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                )
-                                                : const SizedBox.shrink(),
+                                            _buildPingIndicator(config.id),
                                           ],
                                         ),
                                         const SizedBox(height: 4),
@@ -1169,7 +1375,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                               decoration: BoxDecoration(
                                                 color: _getConfigTypeColor(
                                                   config.configType,
-                                                ).withOpacity(0.2),
+                                                ).withValues(alpha: 0.2),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
@@ -1195,7 +1401,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                                   ),
                                               decoration: BoxDecoration(
                                                 color: Colors.blueGrey
-                                                    .withOpacity(0.2),
+                                                    .withValues(alpha: 0.2),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),

@@ -7,7 +7,7 @@ import '../screens/server_selection_screen.dart';
 import 'error_snackbar.dart';
 
 class ServerSelector extends StatelessWidget {
-  const ServerSelector({Key? key}) : super(key: key);
+  const ServerSelector({super.key});
 
   // Proxy mode switch removed as requested
 

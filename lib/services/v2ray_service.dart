@@ -76,6 +76,9 @@ class V2RayService extends ChangeNotifier {
   final Map<String, int?> _pingCache = {};
   final Map<String, DateTime> _pingCacheTime = {};
   final Map<String, bool> _pingInProgress = {};
+  
+  // Cache expiration time (24 hours)
+  static const Duration _cacheExpiration = Duration(hours: 24);
 
   // Get list of installed apps (Android only)
   Future<List<Map<String, dynamic>>> getInstalledApps() async {
@@ -111,11 +114,23 @@ class V2RayService extends ChangeNotifier {
   }
 
   // Clear ping cache for all configs or a specific config
-  void clearPingCache({String? configId}) {
-    if (configId != null) {
-      _pingCache.remove(configId);
-    } else {
-      _pingCache.clear();
+  Future<void> clearPingCache({String? configId}) async {
+    try {
+      if (configId != null) {
+        _pingCache.remove(configId);
+        _pingCacheTime.remove(configId);
+      } else {
+        _pingCache.clear();
+        _pingCacheTime.clear();
+        
+        // Also clear from persistent storage
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('ping_cache');
+        await prefs.remove('ping_cache_time');
+      }
+      debugPrint('Ping cache cleared${configId != null ? ' for $configId' : ''}');
+    } catch (e) {
+      debugPrint('Error clearing ping cache: $e');
     }
   }
 
@@ -128,13 +143,16 @@ class V2RayService extends ChangeNotifier {
   V2RayService._internal() {
     _flutterV2ray = FlutterV2ray(
       onStatusChanged: (status) {
-        print('V2Ray status changed: $status');
+        debugPrint('V2Ray status changed: $status');
         _handleStatusChange(status);
       },
     );
 
     // Load saved usage statistics
     _loadUsageStats();
+    
+    // Load persistent ping cache
+    _loadPingCache();
   }
 
   void _handleStatusChange(V2RayStatus status) {
@@ -145,7 +163,7 @@ class V2RayService extends ChangeNotifier {
             statusString.contains('stop') ||
             statusString.contains('idle')) &&
         _activeConfig != null) {
-      print('Detected disconnection from notification');
+      debugPrint('Detected disconnection from notification');
       _activeConfig = null;
       _onDisconnected?.call();
     }
@@ -362,7 +380,7 @@ class V2RayService extends ChangeNotifier {
               // Start usage monitoring
               _startUsageMonitoring();
             } catch (e) {
-              print('Error parsing last connection time: $e');
+              debugPrint('Error parsing last connection time: $e');
               _lastConnectionTime = DateTime.now();
               await _saveUsageStats();
             }
@@ -377,7 +395,7 @@ class V2RayService extends ChangeNotifier {
         await _clearActiveConfig();
       }
     } catch (e) {
-      print('Error restoring active config: $e');
+      debugPrint('Error restoring active config: $e');
       // Clear any saved config on error
       await _clearActiveConfig();
     }
@@ -438,11 +456,11 @@ class V2RayService extends ChangeNotifier {
           final decoded = utf8.decode(base64.decode(content.trim()));
           // If decoding succeeds, use the decoded content
           content = decoded;
-          print('Successfully decoded base64 content');
+          debugPrint('Successfully decoded base64 content');
         }
       } catch (e) {
         // If base64 decoding fails, use the original content
-        print('Not a valid base64 content, using original: $e');
+        debugPrint('Not a valid base64 content, using original: $e');
       }
 
       final List<String> lines = content.split('\n');
@@ -495,7 +513,7 @@ class V2RayService extends ChangeNotifier {
             );
           }
         } catch (e) {
-          print('Error parsing config: $e');
+          debugPrint('Error parsing config: $e');
         }
       }
 
@@ -505,7 +523,7 @@ class V2RayService extends ChangeNotifier {
 
       return configs;
     } catch (e) {
-      print('Error parsing subscription: $e');
+      debugPrint('Error parsing subscription: $e');
 
       // Provide more specific error messages based on exception type
       if (e.toString().contains('SocketException') ||
@@ -614,7 +632,7 @@ class V2RayService extends ChangeNotifier {
       if (isConnected == null || isConnected < -1) {
         // Changed from < 0 to < -1
         if (_activeConfig != null) {
-          print(
+          debugPrint(
             'Detected VPN disconnection - no server response (delay: $isConnected)',
           );
           _activeConfig = null;
@@ -627,7 +645,7 @@ class V2RayService extends ChangeNotifier {
       if (_activeConfig != null &&
           _lastConnectionTime != null &&
           DateTime.now().difference(_lastConnectionTime!).inSeconds > 30) {
-        print('Detected VPN disconnection - error checking status: $e');
+        debugPrint('Detected VPN disconnection - error checking status: $e');
         _activeConfig = null;
         _lastConnectionTime = null;
         _onDisconnected?.call();
@@ -652,7 +670,7 @@ class V2RayService extends ChangeNotifier {
     try {
       while (retryCount < maxRetries) {
         try {
-          print('Fetching IP info, attempt ${retryCount + 1}/$maxRetries');
+          debugPrint('Fetching IP info, attempt ${retryCount + 1}/$maxRetries');
           final response = await http.get(Uri.parse(apiUrl));
 
           if (response.statusCode == 200) {
@@ -662,17 +680,17 @@ class V2RayService extends ChangeNotifier {
             _ipInfo = ipInfo;
             _isLoadingIpInfo = false;
             notifyListeners();
-            print(
+            debugPrint(
               'IP info fetched successfully: ${ipInfo.ip} - ${ipInfo.locationString}',
             );
             return ipInfo;
           } else {
-            print('HTTP error: ${response.statusCode}');
+            debugPrint('HTTP error: ${response.statusCode}');
             retryCount++;
             await Future.delayed(const Duration(seconds: 1));
           }
         } catch (e) {
-          print('Error fetching IP info: $e');
+          debugPrint('Error fetching IP info: $e');
           retryCount++;
           await Future.delayed(const Duration(seconds: 1));
         }
@@ -683,11 +701,11 @@ class V2RayService extends ChangeNotifier {
       _ipInfo = errorInfo;
       _isLoadingIpInfo = false;
       notifyListeners();
-      print('Failed to fetch IP info after $maxRetries attempts');
+      debugPrint('Failed to fetch IP info after $maxRetries attempts');
       return errorInfo;
     } catch (e) {
       // Handle any unexpected errors
-      print('Unexpected error fetching IP info: $e');
+      debugPrint('Unexpected error fetching IP info: $e');
       final errorInfo = IpInfo.error('Error: $e');
       _ipInfo = errorInfo;
       _isLoadingIpInfo = false;
@@ -714,7 +732,7 @@ class V2RayService extends ChangeNotifier {
 
       return isConnected;
     } catch (e) {
-      print('Error in force connection check: $e');
+      debugPrint('Error in force connection check: $e');
       // Don't automatically clear the active config or call onDisconnected
       // Just report the error but maintain the connection state
       return _activeConfig !=
@@ -822,7 +840,7 @@ class V2RayService extends ChangeNotifier {
             await _saveUsageStats();
           }
         } catch (e) {
-          print('Error updating usage statistics: $e');
+          debugPrint('Error updating usage statistics: $e');
         }
       }
     });
@@ -881,7 +899,7 @@ class V2RayService extends ChangeNotifier {
           }
         }
       } catch (e) {
-        print('Error parsing last connection time: $e');
+        debugPrint('Error parsing last connection time: $e');
         _connectedSeconds = prefs.getInt('connected_seconds') ?? 0;
       }
     } else {
@@ -1106,6 +1124,123 @@ class V2RayService extends ChangeNotifier {
     }
     
     return results;
+  }
+
+  // ===================== PERSISTENT PING CACHE METHODS =====================
+  
+  /// Load persistent ping cache from storage
+  Future<void> _loadPingCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheJson = prefs.getString('ping_cache');
+      final cacheTimeJson = prefs.getString('ping_cache_time');
+      
+      if (cacheJson != null && cacheTimeJson != null) {
+        final cacheData = jsonDecode(cacheJson) as Map<String, dynamic>;
+        final cacheTimeData = jsonDecode(cacheTimeJson) as Map<String, dynamic>;
+        
+        final now = DateTime.now();
+        
+        // Load cache entries that haven't expired
+        cacheData.forEach((key, value) {
+          if (cacheTimeData.containsKey(key)) {
+            try {
+              final timestamp = DateTime.parse(cacheTimeData[key]);
+              
+              // Only load if not expired (within 24 hours)
+              if (now.difference(timestamp) < _cacheExpiration) {
+                _pingCache[key] = value as int?;
+                _pingCacheTime[key] = timestamp;
+              }
+            } catch (e) {
+              // Skip invalid timestamp entries
+              debugPrint('Error parsing cached ping timestamp for $key: $e');
+            }
+          }
+        });
+        
+        debugPrint('Loaded ${_pingCache.length} cached ping results');
+      }
+    } catch (e) {
+      debugPrint('Error loading ping cache: $e');
+      // Clear corrupted cache
+      _pingCache.clear();
+      _pingCacheTime.clear();
+    }
+  }
+  
+  /// Save persistent ping cache to storage
+  Future<void> _savePingCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Prepare cache data for storage
+      final cacheData = <String, int?>{};
+      final cacheTimeData = <String, String>{};
+      
+      _pingCache.forEach((key, value) {
+        if (_pingCacheTime.containsKey(key)) {
+          cacheData[key] = value;
+          cacheTimeData[key] = _pingCacheTime[key]!.toIso8601String();
+        }
+      });
+      
+      // Save to storage
+      await prefs.setString('ping_cache', jsonEncode(cacheData));
+      await prefs.setString('ping_cache_time', jsonEncode(cacheTimeData));
+      
+      debugPrint('Saved ${cacheData.length} ping results to cache');
+    } catch (e) {
+      debugPrint('Error saving ping cache: $e');
+    }
+  }
+  
+  /// Get cached ping result for a server
+  int? getCachedPing(String configId) {
+    final cachedTime = _pingCacheTime[configId];
+    if (cachedTime != null) {
+      // Check if cache is still valid (within 24 hours)
+      if (DateTime.now().difference(cachedTime) < _cacheExpiration) {
+        return _pingCache[configId];
+      } else {
+        // Remove expired entry
+        _pingCache.remove(configId);
+        _pingCacheTime.remove(configId);
+      }
+    }
+    return null;
+  }
+  
+  /// Cache ping result for a server
+  Future<void> cachePingResult(String configId, int? ping) async {
+    try {
+      _pingCache[configId] = ping;
+      _pingCacheTime[configId] = DateTime.now();
+      
+      // Save to persistent storage (but don't wait for it to avoid blocking)
+      _savePingCache().catchError((e) {
+        debugPrint('Error saving ping cache: $e');
+      });
+    } catch (e) {
+      debugPrint('Error caching ping result: $e');
+    }
+  }
+  
+  /// Get servers that need ping testing (not cached or expired)
+  List<V2RayConfig> getServersNeedingPing(List<V2RayConfig> servers) {
+    final serversNeedingPing = <V2RayConfig>[];
+    final now = DateTime.now();
+    
+    for (final server in servers) {
+      final cachedTime = _pingCacheTime[server.id];
+      
+      if (cachedTime == null || now.difference(cachedTime) >= _cacheExpiration) {
+        // No cache or expired cache
+        serversNeedingPing.add(server);
+      }
+    }
+    
+    return serversNeedingPing;
   }
 
 }

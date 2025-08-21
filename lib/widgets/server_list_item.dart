@@ -191,7 +191,7 @@ class _ServerListItemState extends State<ServerListItem> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.blueGrey.withOpacity(0.2),
+                          color: Colors.blueGrey.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(

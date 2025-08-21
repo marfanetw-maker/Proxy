@@ -12,7 +12,7 @@ import 'blocked_apps_screen.dart';
 import 'per_app_tunnel_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
-  const ToolsScreen({Key? key}) : super(key: key);
+  const ToolsScreen({super.key});
 
   @override
   State<ToolsScreen> createState() => _ToolsScreenState();
@@ -190,7 +190,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: AppTheme.primaryGreen, size: 28),
@@ -244,7 +244,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(

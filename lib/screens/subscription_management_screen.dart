@@ -6,7 +6,7 @@ import '../theme/app_theme.dart';
 import '../widgets/error_snackbar.dart';
 
 class SubscriptionManagementScreen extends StatefulWidget {
-  const SubscriptionManagementScreen({Key? key}) : super(key: key);
+  const SubscriptionManagementScreen({super.key});
 
   @override
   State<SubscriptionManagementScreen> createState() =>

@@ -5,7 +5,7 @@ import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
 
 class ConnectionButton extends StatelessWidget {
-  const ConnectionButton({Key? key}) : super(key: key);
+  const ConnectionButton({super.key});
 
   // Helper method to handle async selection and connection
   Future<void> _connectToFirstServer(V2RayProvider provider) async {
@@ -50,7 +50,7 @@ class ConnectionButton extends StatelessWidget {
                   color: _getButtonColor(
                     isConnected,
                     isConnecting,
-                  ).withOpacity(0.3),
+                  ).withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -93,7 +93,7 @@ class ConnectionButton extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: AppTheme.connectingYellow.withOpacity(0.7),
+                            color: AppTheme.connectingYellow.withValues(alpha: 0.7),
                             width: 2,
                           ),
                         ),
@@ -138,14 +138,14 @@ class ConnectionButton extends StatelessWidget {
     if (isConnecting) {
       return [
         AppTheme.connectingYellow,
-        AppTheme.connectingYellow.withOpacity(0.7),
+        AppTheme.connectingYellow.withValues(alpha: 0.7),
       ];
     } else if (isConnected) {
       return [AppTheme.primaryGreen, AppTheme.accentGreen];
     } else {
       return [
         AppTheme.disconnectedRed,
-        AppTheme.disconnectedRed.withOpacity(0.7),
+        AppTheme.disconnectedRed.withValues(alpha: 0.7),
       ];
     }
   }

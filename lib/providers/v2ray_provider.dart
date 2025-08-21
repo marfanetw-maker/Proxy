@@ -215,7 +215,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
             configIds.where((id) => !existingConfigIds.contains(id)).toList();
 
         if (missingConfigIds.isNotEmpty) {
-          print(
+          debugPrint(
             'Warning: Found ${missingConfigIds.length} missing configs for subscription ${subscription.name}',
           );
           // Update the subscription to remove missing config IDs
@@ -517,7 +517,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         } catch (e) {
           // Record failed subscription
           failedSubscriptions.add(subscription.name);
-          print('Error updating subscription ${subscription.name}: $e');
+          debugPrint('Error updating subscription ${subscription.name}: $e');
         }
       }
 
@@ -779,7 +779,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
           notifyListeners();
         })
         .catchError((e) {
-          print('Error saving configs after notification disconnect: $e');
+          debugPrint('Error saving configs after notification disconnect: $e');
           notifyListeners();
         });
   }
@@ -808,7 +808,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       final isActuallyConnected = await _v2rayService.isActuallyConnected();
       final activeConfig = _v2rayService.activeConfig;
 
-      print(
+      debugPrint(
         'Fetching notification status - Connected: $isActuallyConnected, Active config: ${activeConfig?.remark}',
       );
 
@@ -839,11 +839,11 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         if (statusChanged) {
           await _v2rayService.saveConfigs(_configs);
           notifyListeners();
-          print('Connection status updated from notification');
+          debugPrint('Connection status updated from notification');
         }
       }
     } catch (e) {
-      print('Error fetching notification status: $e');
+      debugPrint('Error fetching notification status: $e');
       // Don't change connection state on errors
     }
   }
@@ -877,7 +877,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      print('Error checking connection status: $e');
+      debugPrint('Error checking connection status: $e');
       // Don't change connection state on errors
     }
   }

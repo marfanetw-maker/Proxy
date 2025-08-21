@@ -4,7 +4,7 @@ import 'dart:async';
 import '../theme/app_theme.dart';
 
 class HostCheckerScreen extends StatefulWidget {
-  const HostCheckerScreen({Key? key}) : super(key: key);
+  const HostCheckerScreen({super.key});
 
   @override
   State<HostCheckerScreen> createState() => _HostCheckerScreenState();
@@ -245,7 +245,7 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        disabledBackgroundColor: AppTheme.primaryGreen.withOpacity(0.5),
+        disabledBackgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.5),
       ),
       child:
           _isLoading
@@ -364,8 +364,8 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
                   decoration: BoxDecoration(
                     color:
                         isSuccess
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.red.withOpacity(0.1),
+                            ? Colors.green.withValues(alpha: 0.1)
+                            : Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(

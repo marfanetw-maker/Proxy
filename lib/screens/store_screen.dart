@@ -9,7 +9,7 @@ import '../theme/app_theme.dart';
 import '../widgets/error_snackbar.dart';
 
 class StoreScreen extends StatefulWidget {
-  const StoreScreen({Key? key}) : super(key: key);
+  const StoreScreen({super.key});
 
   @override
   State<StoreScreen> createState() => _StoreScreenState();
@@ -225,7 +225,7 @@ class _StoreScreenState extends State<StoreScreen> {
                   hintText: 'Search by name or developer',
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
+                  fillColor: Colors.white.withValues(alpha: 0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -281,9 +281,9 @@ class _StoreScreenState extends State<StoreScreen> {
                           final item = _filteredItems[index];
                           return Card(
                             margin: const EdgeInsets.only(bottom: 16),
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             elevation: 4,
-                            shadowColor: Colors.black.withOpacity(0.3),
+                            shadowColor: Colors.black.withValues(alpha: 0.3),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -324,10 +324,10 @@ class _StoreScreenState extends State<StoreScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.3),
+                                      color: Colors.black.withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: Colors.white.withOpacity(0.1),
+                                        color: Colors.white.withValues(alpha: 0.1),
                                         width: 1,
                                       ),
                                     ),

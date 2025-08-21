@@ -9,7 +9,7 @@ import '../widgets/error_snackbar.dart';
 import '../theme/app_theme.dart';
 
 class TelegramProxyScreen extends StatefulWidget {
-  const TelegramProxyScreen({Key? key}) : super(key: key);
+  const TelegramProxyScreen({super.key});
 
   @override
   State<TelegramProxyScreen> createState() => _TelegramProxyScreenState();

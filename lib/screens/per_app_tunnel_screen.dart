@@ -5,7 +5,7 @@ import '../services/v2ray_service.dart';
 import 'package:flutter/foundation.dart';
 
 class PerAppTunnelScreen extends StatefulWidget {
-  const PerAppTunnelScreen({Key? key}) : super(key: key);
+  const PerAppTunnelScreen({super.key});
 
   @override
   State<PerAppTunnelScreen> createState() => _PerAppTunnelScreenState();
@@ -76,18 +76,16 @@ class _PerAppTunnelScreenState extends State<PerAppTunnelScreen> {
         // Convert the raw data to AppInfo objects
         List<AppInfo> appInfoList = [];
 
-        if (apps is List<dynamic>) {
-          for (var app in apps) {
-            if (app is Map<String, dynamic>) {
-              appInfoList.add(
-                AppInfo(
-                  name: app['name'] ?? 'Unknown',
-                  packageName: app['packageName'] ?? '',
-                  isSystemApp: app['isSystemApp'] ?? false,
-                ),
-              );
-            }
-          }
+        final appsList = apps as List<dynamic>? ?? [];
+        for (var app in appsList) {
+          final appMap = app as Map<String, dynamic>? ?? {};
+          appInfoList.add(
+            AppInfo(
+              name: appMap['name'] ?? 'Unknown',
+              packageName: appMap['packageName'] ?? '',
+              isSystemApp: appMap['isSystemApp'] ?? false,
+            ),
+          );
         }
 
         // For "per-app tunnel": selected apps = available - blocked
@@ -219,7 +217,7 @@ class _PerAppTunnelScreenState extends State<PerAppTunnelScreen> {
                   ),
                   child: Text(
                     'Select apps to use the VPN tunnel. Unselected apps will be blocked.',
-                    style: TextStyle(color: Colors.white.withOpacity(0.85)),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.85)),
                   ),
                 ),
                 // Search bar
@@ -232,7 +230,7 @@ class _PerAppTunnelScreenState extends State<PerAppTunnelScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search apps...',
                       hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                       ),
                       prefixIcon: const Icon(
                         Icons.search,

@@ -5,7 +5,7 @@ import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
 
 class ConnectionStatus extends StatelessWidget {
-  const ConnectionStatus({Key? key}) : super(key: key);
+  const ConnectionStatus({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class ConnectionStatus extends StatelessWidget {
                 color: _getStatusColor(
                   activeConfig != null,
                   isConnecting,
-                ).withOpacity(0.3),
+                ).withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -85,7 +85,7 @@ class ConnectionStatus extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -145,7 +145,7 @@ class ConnectionStatus extends StatelessWidget {
     if (isConnecting) {
       return [
         AppTheme.connectingYellow,
-        AppTheme.connectingYellow.withOpacity(0.8),
+        AppTheme.connectingYellow.withValues(alpha: 0.8),
       ];
     }
     if (isConnected) {
@@ -153,7 +153,7 @@ class ConnectionStatus extends StatelessWidget {
     }
     return [
       AppTheme.disconnectedRed,
-      AppTheme.disconnectedRed.withOpacity(0.8),
+      AppTheme.disconnectedRed.withValues(alpha: 0.8),
     ];
   }
 

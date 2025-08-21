@@ -10,7 +10,7 @@ import 'tools_screen.dart';
 import 'store_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({Key? key}) : super(key: key);
+  const MainNavigationScreen({super.key});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -107,7 +107,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           color: AppTheme.primaryDark,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 10,
               offset: const Offset(0, -3),
             ),

@@ -133,7 +133,7 @@ class _ServerBottomSheetState extends State<ServerBottomSheet> {
                   ),
                   tileColor:
                       isSelected
-                          ? AppTheme.primaryGreen.withOpacity(0.1)
+                          ? AppTheme.primaryGreen.withValues(alpha: 0.1)
                           : null,
                   leading: Container(
                     width: 12,

@@ -5,7 +5,7 @@ import '../services/v2ray_service.dart';
 import 'package:flutter/foundation.dart';
 
 class BlockedAppsScreen extends StatefulWidget {
-  const BlockedAppsScreen({Key? key}) : super(key: key);
+  const BlockedAppsScreen({super.key});
 
   @override
   State<BlockedAppsScreen> createState() => _BlockedAppsScreenState();
@@ -77,18 +77,16 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
         List<AppInfo> appInfoList = [];
 
         // For Android, we expect a list of maps with name and packageName
-        if (apps is List<dynamic>) {
-          for (var app in apps) {
-            if (app is Map<String, dynamic>) {
-              appInfoList.add(
-                AppInfo(
-                  name: app['name'] ?? 'Unknown',
-                  packageName: app['packageName'] ?? '',
-                  isSystemApp: app['isSystemApp'] ?? false,
-                ),
-              );
-            }
-          }
+        final appsList = apps as List<dynamic>? ?? [];
+        for (var app in appsList) {
+          final appMap = app as Map<String, dynamic>? ?? {};
+          appInfoList.add(
+            AppInfo(
+              name: appMap['name'] ?? 'Unknown',
+              packageName: appMap['packageName'] ?? '',
+              isSystemApp: appMap['isSystemApp'] ?? false,
+            ),
+          );
         }
 
         setState(() {
@@ -196,11 +194,11 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search apps...',
                       hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                       ),
                       prefixIcon: const Icon(Icons.search, color: Colors.white),
                       filled: true,
-                      fillColor: AppTheme.primaryDark.withOpacity(0.5),
+                      fillColor: AppTheme.primaryDark.withValues(alpha: 0.5),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
@@ -232,7 +230,7 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
                                 horizontal: 8,
                                 vertical: 4,
                               ),
-                              color: AppTheme.primaryDark.withOpacity(0.8),
+                              color: AppTheme.primaryDark.withValues(alpha: 0.8),
                               child: ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: app.isSystemApp
@@ -252,7 +250,7 @@ class _BlockedAppsScreenState extends State<BlockedAppsScreen> {
                                 subtitle: Text(
                                   app.packageName,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: Colors.white.withValues(alpha: 0.7),
                                     fontSize: 12,
                                   ),
                                 ),

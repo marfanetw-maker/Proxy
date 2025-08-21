@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 import 'main_navigation_screen.dart';
 
 class PrivacyWelcomeScreen extends StatefulWidget {
-  const PrivacyWelcomeScreen({Key? key}) : super(key: key);
+  const PrivacyWelcomeScreen({super.key});
 
   @override
   State<PrivacyWelcomeScreen> createState() => _PrivacyWelcomeScreenState();
@@ -75,7 +75,7 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
             end: Alignment.bottomCenter,
             colors: [
               AppTheme.primaryDark,
-              AppTheme.primaryDark.withOpacity(0.8),
+              AppTheme.primaryDark.withValues(alpha: 0.8),
             ],
           ),
         ),
@@ -140,7 +140,7 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
                                 color:
                                     _currentPage == index
                                         ? AppTheme.primaryGreen
-                                        : Colors.grey.withOpacity(0.5),
+                                        : Colors.grey.withValues(alpha: 0.5),
                               ),
                             ),
                           ),
@@ -161,7 +161,7 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               disabledBackgroundColor: AppTheme.primaryGreen
-                                  .withOpacity(0.3),
+                                  .withValues(alpha: 0.3),
                             ),
                             child: Text(
                               _currentPage == _totalPages - 1
