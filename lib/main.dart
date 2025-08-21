@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,11 +13,31 @@ import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Global error handling to prevent crashes
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    // Don't crash the app on Flutter framework errors
+    debugPrint('FlutterError: \\n${details.exceptionAsString()}\\n${details.stack}');
+  };
+
+  // Catch errors from platform/async without crashing the app
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('Uncaught zone error: $error');
+    debugPrint(stack.toString());
+    return true; // prevent crash
+  };
+
   // Check if user has accepted privacy policy
   final prefs = await SharedPreferences.getInstance();
   final bool privacyAccepted = prefs.getBool('privacy_accepted') ?? false;
 
-  runApp(MyApp(privacyAccepted: privacyAccepted));
+  // Run inside zone guard for additional safety
+  runZonedGuarded(() {
+    runApp(MyApp(privacyAccepted: privacyAccepted));
+  }, (error, stack) {
+    debugPrint('ZoneGuard caught error: $error');
+    debugPrint(stack.toString());
+  });
 }
 
 class MyApp extends StatefulWidget {

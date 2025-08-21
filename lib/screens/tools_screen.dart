@@ -9,6 +9,7 @@ import 'speedtest_screen.dart';
 import 'subscription_management_screen.dart';
 import 'vpn_settings_screen.dart';
 import 'blocked_apps_screen.dart';
+import 'per_app_tunnel_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({Key? key}) : super(key: key);
@@ -142,6 +143,21 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const BlockedAppsScreen(),
+                ),
+              );
+            },
+          ),
+          _buildToolCard(
+            context,
+            title: 'Per-App Tunnel',
+            description:
+                'Select apps that should use the VPN tunnel (others will be blocked)',
+            icon: Icons.shield_moon,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PerAppTunnelScreen(),
                 ),
               );
             },
