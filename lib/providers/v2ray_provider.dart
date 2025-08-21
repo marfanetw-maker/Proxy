@@ -715,6 +715,28 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
+  // Add method to ping all servers
+  Future<void> pingAllServers() async {
+    if (_configs.isEmpty) return;
+    
+    try {
+      // Use the batch ping method from the service
+      await _v2rayService.batchPingServers(
+        _configs,
+        maxConcurrent: 3,
+        onProgress: (completed, total) {
+          // Progress updates could be handled here if needed
+          debugPrint('Ping progress: $completed/$total');
+        },
+      );
+      
+      // Notify listeners to refresh the UI
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error pinging all servers: $e');
+    }
+  }
+
   // تغییر وضعیت بین حالت پروکسی و تونل
   void toggleProxyMode(bool isProxy) {
     _isProxyMode = isProxy;

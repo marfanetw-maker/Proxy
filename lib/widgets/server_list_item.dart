@@ -97,7 +97,26 @@ class _ServerListItemState extends State<ServerListItem> {
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        // Removed delay display as requested
+                        const SizedBox(height: 4),
+                        // Show ping information
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.network_ping,
+                              size: 12,
+                              color: _getPingColor(),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _getPingText(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getPingColor(),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -226,7 +245,31 @@ class _ServerListItemState extends State<ServerListItem> {
     }
   }
 
-  // Removed _getPingColor method
+  Color _getPingColor() {
+    if (_isLoadingPing) {
+      return Colors.orange;
+    }
+    if (_ping == null) {
+      return Colors.red;
+    }
+    if (_ping! < 2000) {
+      return Colors.green;
+    } else if (_ping! < 3000) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
+  }
+
+  String _getPingText() {
+    if (_isLoadingPing) {
+      return 'Testing...';
+    }
+    if (_ping == null) {
+      return 'Timeout';
+    }
+    return '${_ping}ms';
+  }
 
   String _getSubscriptionName(BuildContext context) {
     final provider = Provider.of<V2RayProvider>(context, listen: false);

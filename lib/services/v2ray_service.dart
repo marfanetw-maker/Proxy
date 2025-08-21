@@ -383,134 +383,29 @@ class V2RayService extends ChangeNotifier {
     }
   }
 
-  // Modern crash-proof ping handling with rate limiting and proper async patterns
-  static final Map<String, Future<int?>> _ongoingPings = {};
-  static const int _maxConcurrentPings = 5; // Limit concurrent pings
-  static int _currentPingCount = 0;
-  
+  /// Simple and reliable ping method similar to flutter_v2ray example
   Future<int?> getServerDelay(V2RayConfig config) async {
-    return _safeExecute<int?>(
-      operation: () => _performPingWithRateLimit(config),
-      fallbackValue: null,
-      context: 'getServerDelay for ${config.remark}',
-    );
-  }
-
-  Future<int?> _performPingWithRateLimit(V2RayConfig config) async {
-    final configId = config.id;
-    final hostKey = '${config.address}:${config.port}';
-
-    // Return cached result if available and not expired (5 minutes cache)
-    final cachedTime = _pingCacheTime[hostKey];
-    if (_pingCache.containsKey(hostKey) && 
-        cachedTime != null && 
-        DateTime.now().difference(cachedTime).inMinutes < 5) {
-      return _pingCache[hostKey];
-    }
-
-    // Check if ping is already in progress for this host
-    if (_ongoingPings.containsKey(hostKey)) {
-      try {
-        return await _ongoingPings[hostKey]!.timeout(
-          const Duration(seconds: 15),
-          onTimeout: () => null,
-        );
-      } catch (e) {
-        debugPrint('Error waiting for ongoing ping: $e');
-        _ongoingPings.remove(hostKey);
-        return null;
-      }
-    }
-
-    // Rate limiting - wait if too many concurrent pings
-    while (_currentPingCount >= _maxConcurrentPings) {
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-
-    // Start new ping operation
-    _currentPingCount++;
-    final pingFuture = _executePingOperation(config, hostKey);
-    _ongoingPings[hostKey] = pingFuture;
-
     try {
-      final result = await pingFuture;
-      return result;
-    } finally {
-      _currentPingCount--;
-      _ongoingPings.remove(hostKey);
-    }
-  }
-
-  Future<int?> _executePingOperation(V2RayConfig config, String hostKey) async {
-    try {
-      // Ensure V2Ray is initialized with timeout
-      await _safeInitialize();
-
-      // Parse config with comprehensive error handling
-      final parser = await _safeParseConfig(config);
-      if (parser == null) {
-        _updatePingCache(hostKey, null);
-        return null;
-      }
-
-      // Execute ping with multiple fallback strategies
-      final delay = await _performPingWithFallback(parser, config);
+      // Ensure V2Ray is initialized
+      await initialize();
       
-      // Cache result with timestamp
-      _updatePingCache(hostKey, delay);
-      return delay;
+      // Parse the configuration
+      final parser = FlutterV2ray.parseFromURL(config.fullConfig);
+      
+      // Get server delay with timeout
+      final delay = await _flutterV2ray.getServerDelay(
+        config: parser.getFullConfiguration(),
+      ).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => -1,
+      );
+      
+      // Return valid ping or null for invalid/timeout results
+      return (delay >= 0) ? delay : null;
       
     } catch (e) {
-      debugPrint('Ping operation failed for ${config.remark}: $e');
-      _updatePingCache(hostKey, null);
+      debugPrint('Error getting server delay for ${config.remark}: $e');
       return null;
-    }
-  }
-
-  Future<int?> _performPingWithFallback(V2RayURL parser, V2RayConfig config) async {
-    const maxAttempts = 2;
-    
-    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        final delay = await _flutterV2ray.getServerDelay(
-          config: parser.getFullConfiguration(),
-        ).timeout(
-          Duration(seconds: 6 + attempt), // Progressive timeout
-          onTimeout: () => throw TimeoutException('Ping timeout', Duration(seconds: 6 + attempt)),
-        );
-
-        if (_isValidPing(delay)) {
-          return delay;
-        }
-        
-        if (attempt < maxAttempts) {
-          await Future.delayed(Duration(milliseconds: 500 * attempt));
-        }
-      } on TimeoutException catch (e) {
-        debugPrint('Ping timeout attempt $attempt for ${config.remark}: $e');
-        if (attempt == maxAttempts) return null;
-      } catch (e) {
-        debugPrint('Ping error attempt $attempt for ${config.remark}: $e');
-        if (attempt == maxAttempts) return null;
-      }
-    }
-    
-    return null;
-  }
-
-  bool _isValidPing(int? delay) {
-    return delay != null && delay >= 0 && delay < 30000; // Max 30 seconds
-  }
-
-  void _updatePingCache(String hostKey, int? delay) {
-    try {
-      _pingCache[hostKey] = delay;
-      _pingCacheTime[hostKey] = DateTime.now();
-      
-      // Cleanup old cache entries to prevent memory leaks
-      _cleanupPingCache();
-    } catch (e) {
-      debugPrint('Error updating ping cache: $e');
     }
   }
 
@@ -1213,27 +1108,4 @@ class V2RayService extends ChangeNotifier {
     return results;
   }
 
-  /// Enhanced memory management
-  void _performMemoryCleanup() {
-    try {
-      // Cleanup ping cache and stale timestamps
-      _cleanupPingCache();
-      debugPrint('Memory cleanup completed');
-    } catch (e) {
-      debugPrint('Error during memory cleanup: $e');
-    }
-  }
-
-  /// Force cleanup all resources
-  void forceCleanup() {
-    try {
-      _currentPingCount = 0;
-      _ongoingPings.clear();
-      _performMemoryCleanup();
-      
-      debugPrint('Force cleanup completed');
-    } catch (e) {
-      debugPrint('Error in force cleanup: $e');
-    }
-  }
 }

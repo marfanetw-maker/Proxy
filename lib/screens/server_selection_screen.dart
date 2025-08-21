@@ -684,6 +684,49 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         elevation: 0,
         actions: [
           ...appBarActions,
+          IconButton(
+            icon: Icon(
+              Icons.network_ping,
+              color: _isPingingServers ? AppTheme.primaryGreen : null,
+            ),
+            onPressed: _isPingingServers ? null : () async {
+              setState(() {
+                _isPingingServers = true;
+              });
+              
+              try {
+                final provider = Provider.of<V2RayProvider>(context, listen: false);
+                await provider.pingAllServers();
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Ping test completed!'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Ping test failed: $e'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    _isPingingServers = false;
+                  });
+                }
+              }
+            },
+            tooltip: 'Ping All Servers',
+          ),
           if (_selectedFilter != 'Local')
             IconButton(
               icon: const Icon(Icons.refresh),
