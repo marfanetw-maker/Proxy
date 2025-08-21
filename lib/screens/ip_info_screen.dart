@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../providers/v2ray_provider.dart';
-import '../services/v2ray_service.dart';
 import '../theme/app_theme.dart';
 
 class IpInfoScreen extends StatefulWidget {

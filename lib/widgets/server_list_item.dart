@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/v2ray_config.dart';
-import '../models/subscription.dart';
 import '../providers/v2ray_provider.dart';
 import '../services/v2ray_service.dart';
 

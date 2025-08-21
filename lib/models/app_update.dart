@@ -6,7 +6,7 @@ class AppUpdate {
   final String messText;
 
   // Current app version - manually set
-  static const String currentAppVersion = '2.2.0';
+  static const String currentAppVersion = '2.3.0';
 
   AppUpdate({required this.version, required this.url, required this.messText});
 
@@ -38,8 +38,12 @@ class AppUpdate {
       List<int> newer = newVersion.split('.').map(int.parse).toList();
 
       // Ensure both lists have at least 3 elements
-      while (current.length < 3) current.add(0);
-      while (newer.length < 3) newer.add(0);
+      while (current.length < 3) {
+        current.add(0);
+      }
+      while (newer.length < 3) {
+        newer.add(0);
+      }
 
       for (int i = 0; i < 3; i++) {
         if (newer[i] > current[i]) {

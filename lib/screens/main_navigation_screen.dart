@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../providers/telegram_proxy_provider.dart';
 import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/error_snackbar.dart';

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import '../models/telegram_proxy.dart';
 import '../providers/telegram_proxy_provider.dart';
 import '../widgets/background_gradient.dart';

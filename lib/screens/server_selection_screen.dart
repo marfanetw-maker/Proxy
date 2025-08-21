@@ -133,28 +133,35 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     V2RayConfig config,
     List<V2RayConfig> relatedConfigs,
   ) async {
-    if (_cancelPingTasks[config.id] == true) return;
-
-    // Safely update loading state
-    if (mounted) {
-      setState(() {
-        for (var relatedConfig in relatedConfigs) {
-          _loadingPings[relatedConfig.id] = true;
-        }
-      });
-    }
+    // Check if task was cancelled before starting
+    if (_cancelPingTasks[config.id] == true || !mounted) return;
 
     try {
-      // Add timeout to prevent hanging
-      final ping = await _v2rayService
-          .getServerDelay(config)
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              debugPrint('Ping timeout for server ${config.remark}');
-              return null; // Return null on timeout
-            },
-          );
+      // Safely update loading state
+      if (mounted) {
+        setState(() {
+          for (var relatedConfig in relatedConfigs) {
+            _loadingPings[relatedConfig.id] = true;
+          }
+        });
+      }
+
+      // Add timeout to prevent hanging with proper error handling
+      int? ping;
+      try {
+        ping = await _v2rayService
+            .getServerDelay(config)
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                debugPrint('Ping timeout for server ${config.remark}');
+                return null; // Return null on timeout
+              },
+            );
+      } catch (e) {
+        debugPrint('Error pinging server ${config.remark}: $e');
+        ping = null;
+      }
 
       // Check if widget is still mounted and task wasn't cancelled
       if (mounted && _cancelPingTasks[config.id] != true) {
@@ -166,9 +173,9 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error pinging server ${config.remark}: $e');
+      debugPrint('Unexpected error in _loadPingForConfig for ${config.remark}: $e');
       // Safely handle error state
-      if (mounted) {
+      if (mounted && _cancelPingTasks[config.id] != true) {
         setState(() {
           for (var relatedConfig in relatedConfigs) {
             _pings[relatedConfig.id] = null;
@@ -181,11 +188,15 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
   Future<int?> _pingServer(V2RayConfig config) async {
     try {
-      if (_cancelPingTasks[config.id] == true) return null;
+      // Check if task was cancelled or widget unmounted
+      if (_cancelPingTasks[config.id] == true || !mounted) {
+        return null;
+      }
+
       return await _v2rayService
           .getServerDelay(config)
           .timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 8), // Reduced timeout for better UX
             onTimeout: () {
               debugPrint('Ping timeout for server ${config.remark}');
               return null; // Return null on timeout
@@ -201,39 +212,69 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     List<V2RayConfig> configs,
     BuildContext context,
   ) async {
+    // Clear any existing ping tasks
     _cancelPingTasks.clear();
     V2RayConfig? selectedConfig;
     final remainingConfigs = List<V2RayConfig>.from(configs);
 
+    // Check if widget is still mounted before starting
+    if (!mounted) return;
+
     try {
       while (remainingConfigs.isNotEmpty && selectedConfig == null && mounted) {
-        final batchSize = min(5, remainingConfigs.length);
+        final batchSize = min(3, remainingConfigs.length); // Reduced batch size
         final currentBatch = remainingConfigs.take(batchSize).toList();
         remainingConfigs.removeRange(0, batchSize);
 
-        _autoConnectStatusStream.add(
-          'Testing batch of ${currentBatch.length} servers...',
-        );
+        // Check mounted state before updating stream
+        if (!mounted) break;
+        
+        try {
+          _autoConnectStatusStream.add(
+            'Testing batch of ${currentBatch.length} servers...',
+          );
+        } catch (e) {
+          debugPrint('Error updating status stream: $e');
+        }
 
         final completer = Completer<V2RayConfig?>();
         
-        // Create a timeout that won't crash the app
+        // Create a timeout with proper cleanup
         _batchTimeoutTimer?.cancel();
-        _batchTimeoutTimer = Timer(const Duration(seconds: 10), () {
-          if (!completer.isCompleted) {
+        _batchTimeoutTimer = Timer(const Duration(seconds: 8), () {
+          if (!completer.isCompleted && mounted) {
             debugPrint('Batch timeout reached, moving to next batch');
-            _autoConnectStatusStream.add('Batch timeout reached, trying next servers...');
+            try {
+              _autoConnectStatusStream.add('Batch timeout, trying next servers...');
+            } catch (e) {
+              debugPrint('Error updating status stream on timeout: $e');
+            }
             completer.complete(null);
           }
         });
 
         try {
-          final pingTasks = currentBatch.map((config) => _processPingTask(config, completer)).toList();
-          selectedConfig = await completer.future;
+          // Start ping tasks for current batch
+          final pingFutures = currentBatch.map((config) => _processPingTask(config, completer));
+          await Future.wait(pingFutures, eagerError: false);
+          
+          // Wait for completer to complete or timeout
+          selectedConfig = await completer.future.timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('Completer timeout reached');
+              return null;
+            },
+          );
+          
           _batchTimeoutTimer?.cancel();
         } catch (e) {
-          debugPrint('Error in batch processing: $e');
-          // Don't rethrow, just continue to next batch
+          if (e.toString().contains('timeout')) {
+            debugPrint('Timeout in batch processing: $e');
+          } else {
+            debugPrint('Error in batch processing: $e');
+          }
+          _batchTimeoutTimer?.cancel();
           continue;
         }
       }
@@ -242,52 +283,93 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       _batchTimeoutTimer?.cancel();
       _batchTimeoutTimer = null;
 
+      // Check if widget is still mounted before proceeding
       if (!mounted) return;
 
       if (selectedConfig != null) {
-        _autoConnectStatusStream.add(
-          'Connecting to ${selectedConfig.remark} (${_pings[selectedConfig.id]}ms)',
-        );
         try {
+          if (mounted) {
+            _autoConnectStatusStream.add(
+              'Connecting to ${selectedConfig.remark} (${_pings[selectedConfig.id]}ms)',
+            );
+          }
+          
+          // Attempt to connect to the selected server
           await widget.onConfigSelected(selectedConfig);
+          
+          // Safe navigation with proper checks
           if (mounted && Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(); // Close auto-connect dialog
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop(); // Close server selection screen
+            }
           }
         } catch (e) {
           debugPrint('Error connecting to selected server: $e');
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to connect: ${e.toString()}')),
-            );
+            try {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop(); // Close auto-connect dialog
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to connect: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            } catch (navError) {
+              debugPrint('Error with navigation/snackbar: $navError');
+            }
           }
         }
       } else {
+        // No suitable server found
         if (mounted) {
-          _autoConnectStatusStream.add('No suitable server found');
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('No server with valid ping found. Please try again.'),
-              ),
-            );
+          try {
+            _autoConnectStatusStream.add('No suitable server found');
+            
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop(); // Close auto-connect dialog
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No server with valid ping found. Please try again.'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          } catch (e) {
+            debugPrint('Error showing no server found message: $e');
           }
         }
       }
     } catch (e) {
       debugPrint('Error in auto connect algorithm: $e');
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error during auto-select: ${e.toString()}')),
-        );
+      
+      // Safe error handling with navigation
+      if (mounted) {
+        try {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(); // Close auto-connect dialog
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error during auto-select: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } catch (navError) {
+          debugPrint('Error with navigation/snackbar in catch: $navError');
+        }
       }
     } finally {
-      // Ensure cleanup happens
-      _batchTimeoutTimer?.cancel();
-      _batchTimeoutTimer = null;
-      _cancelAllPingTasks();
+      // Ensure cleanup happens even if errors occur
+      try {
+        _batchTimeoutTimer?.cancel();
+        _batchTimeoutTimer = null;
+        _cancelAllPingTasks();
+      } catch (e) {
+        debugPrint('Error during cleanup: $e');
+      }
     }
   }
 
@@ -295,48 +377,94 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     V2RayConfig config,
     Completer<V2RayConfig?> completer,
   ) async {
-    if (!mounted || completer.isCompleted) return;
+    // Early return if widget unmounted or completer already completed
+    if (!mounted || completer.isCompleted || _cancelPingTasks[config.id] == true) {
+      return;
+    }
 
     try {
-      _autoConnectStatusStream.add('Testing ${config.remark}...');
-
-      // Add timeout to prevent hanging
-      final ping = await _pingServer(config).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          debugPrint('Ping timeout for server ${config.remark}');
-          return null;
-        },
-      );
-
-      // Check if completer is already completed or widget is unmounted
-      if (completer.isCompleted || !mounted) return;
-
-      // Safely update state
-      if (mounted) {
-        setState(() {
-          _pings[config.id] = ping;
-          _loadingPings[config.id] = false;
-        });
+      // Safely update status stream
+      if (mounted && !completer.isCompleted) {
+        try {
+          _autoConnectStatusStream.add('Testing ${config.remark}...');
+        } catch (e) {
+          debugPrint('Error updating status stream: $e');
+        }
       }
 
-      // If we found a server with ping (not -1, not 0), select it immediately
-      if (ping != null && ping > 0) {
+      // Ping the server with timeout
+      int? ping;
+      try {
+        ping = await _pingServer(config).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            debugPrint('Ping task timeout for server ${config.remark}');
+            return null;
+          },
+        );
+      } catch (e) {
+        if (e.toString().contains('timeout')) {
+          debugPrint('Timeout in ping task for ${config.remark}: $e');
+        } else {
+          debugPrint('Error pinging server in task ${config.remark}: $e');
+        }
+        ping = null;
+      }
+
+      // Check if we should continue (widget still mounted and completer not completed)
+      if (!mounted || completer.isCompleted || _cancelPingTasks[config.id] == true) {
+        return;
+      }
+
+      // Safely update state
+      try {
+        if (mounted) {
+          setState(() {
+            _pings[config.id] = ping;
+            _loadingPings[config.id] = false;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error updating ping state for ${config.remark}: $e');
+      }
+
+      // Check if we found a valid server
+      if (ping != null && ping > 0 && ping < 5000) { // Valid ping range
         if (mounted && !completer.isCompleted) {
-          _autoConnectStatusStream.add(
-            '${config.remark} responded with ${ping}ms',
-          );
-          _cancelAllPingTasks();
-          completer.complete(config);
+          try {
+            _autoConnectStatusStream.add(
+              '${config.remark} responded with ${ping}ms',
+            );
+            _cancelAllPingTasks();
+            completer.complete(config);
+          } catch (e) {
+            debugPrint('Error completing successful ping for ${config.remark}: $e');
+          }
         }
       } else {
-        if (mounted) {
-          _autoConnectStatusStream.add('${config.remark} failed or timed out');
+        // Server failed or had invalid ping
+        if (mounted && !completer.isCompleted) {
+          try {
+            _autoConnectStatusStream.add('${config.remark} failed or timed out');
+          } catch (e) {
+            debugPrint('Error updating failed status for ${config.remark}: $e');
+          }
         }
       }
     } catch (e) {
-      debugPrint('Error in _processPingTask for ${config.remark}: $e');
-      // Don't complete the completer on error, let other servers try
+      debugPrint('Unexpected error in _processPingTask for ${config.remark}: $e');
+      
+      // Safely update loading state on error
+      try {
+        if (mounted && !completer.isCompleted) {
+          setState(() {
+            _pings[config.id] = null;
+            _loadingPings[config.id] = false;
+          });
+        }
+      } catch (stateError) {
+        debugPrint('Error updating error state for ${config.remark}: $stateError');
+      }
     }
   }
 
@@ -374,13 +502,19 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             _isPingingServers
                 ? null
                 : () async {
-                  setState(() {
-                    _isPingingServers = true;
-                    // Clear existing pings when starting new test
-                    _pings.clear();
-                  });
-
+                  // Prevent multiple ping operations at once
+                  if (_isPingingServers) return;
+                  
                   try {
+                    if (mounted) {
+                      setState(() {
+                        _isPingingServers = true;
+                        // Clear existing pings when starting new test
+                        _pings.clear();
+                        _loadingPings.clear();
+                      });
+                    }
+
                     if (_selectedFilter == 'All') {
                       await _loadAllPings();
                     } else if (_selectedFilter == 'Local') {
@@ -394,36 +528,70 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                           .where((config) => !allSubscriptionConfigIds.contains(config.id))
                           .toList();
                       
-                      // Test pings for local configs
+                      // Test pings for local configs with error handling
                       for (var config in localConfigs) {
                         if (!mounted) break;
-                        await _loadPingForConfig(config, [config]);
+                        try {
+                          await _loadPingForConfig(config, [config]);
+                        } catch (e) {
+                          debugPrint('Error pinging local config ${config.remark}: $e');
+                          // Continue with next config instead of crashing
+                        }
                       }
                     } else {
-                      final subscription = subscriptions.firstWhere(
-                        (sub) => sub.name == _selectedFilter,
-                        orElse:
-                            () => Subscription(
-                              id: '',
-                              name: '',
-                              url: '',
-                              lastUpdated: DateTime.now(),
-                              configIds: [],
+                      try {
+                        final subscription = subscriptions.firstWhere(
+                          (sub) => sub.name == _selectedFilter,
+                          orElse:
+                              () => Subscription(
+                                id: '',
+                                name: '',
+                                url: '',
+                                lastUpdated: DateTime.now(),
+                                configIds: [],
+                              ),
+                        );
+                        final provider = Provider.of<V2RayProvider>(context, listen: false);
+                        final allConfigs = provider.configs;
+                        final configsToTest =
+                            allConfigs
+                                .where(
+                                  (config) =>
+                                      subscription.configIds.contains(config.id),
+                                )
+                                .toList();
+                        
+                        // Test pings for subscription configs with error handling
+                        for (var config in configsToTest) {
+                          if (!mounted) break;
+                          try {
+                            await _loadPingForConfig(config, [config]);
+                          } catch (e) {
+                            debugPrint('Error pinging subscription config ${config.remark}: $e');
+                            // Continue with next config instead of crashing
+                          }
+                        }
+                      } catch (e) {
+                        debugPrint('Error processing subscription filter: $e');
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error testing servers: $e'),
+                              backgroundColor: Colors.red,
                             ),
-                      );
-                      final provider = Provider.of<V2RayProvider>(context, listen: false);
-                      final allConfigs = provider.configs;
-                      final configsToTest =
-                          allConfigs
-                              .where(
-                                (config) =>
-                                    subscription.configIds.contains(config.id),
-                              )
-                              .toList();
-                      for (var config in configsToTest) {
-                        if (!mounted) break;
-                        await _loadPingForConfig(config, [config]);
+                          );
+                        }
                       }
+                    }
+                  } catch (e) {
+                    debugPrint('Error in ping operation: $e');
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error testing servers: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                     }
                   } finally {
                     if (mounted) {
@@ -499,7 +667,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         if (!isValidPingB) return -1;
 
         // Sort by ping value (only valid pings reach here)
-        return _sortAscending ? pingA!.compareTo(pingB!) : pingB!.compareTo(pingA!);
+        return _sortAscending ? pingA.compareTo(pingB) : pingB.compareTo(pingA);
       });
     }
 
@@ -845,10 +1013,22 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                               ),
                                         );
                                       } else {
-                                        await widget.onConfigSelected(config);
-                                        if (mounted &&
-                                            Navigator.of(context).canPop()) {
-                                          Navigator.pop(context);
+                                        try {
+                                          await widget.onConfigSelected(config);
+                                          if (mounted &&
+                                              Navigator.of(context).canPop()) {
+                                            Navigator.pop(context);
+                                          }
+                                        } catch (e) {
+                                          debugPrint('Error selecting server ${config.remark}: $e');
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Failed to connect to ${config.remark}: $e'),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                          }
                                         }
                                       }
                                     },

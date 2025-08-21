@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/models/v2ray_config.dart';
 import 'package:flutter_application_1/models/subscription.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -164,7 +163,7 @@ class V2RayService extends ChangeNotifier {
     }
   }
 
-  Future<bool> connect(V2RayConfig config, bool status_proxy) async {
+  Future<bool> connect(V2RayConfig config, bool statusProxy) async {
     try {
       await initialize();
 
@@ -196,10 +195,10 @@ class V2RayService extends ChangeNotifier {
       }
 
       // Save the proxy mode setting to SharedPreferences
-      await prefs.setBool('proxy_mode_enabled', status_proxy);
+      await prefs.setBool('proxy_mode_enabled', statusProxy);
 
       // Save the proxy mode setting to the config object
-      config.isProxyMode = status_proxy;
+      config.isProxyMode = statusProxy;
 
       // Get custom DNS settings
       final bool dnsEnabled = prefs.getBool('custom_dns_enabled') ?? false;
@@ -230,7 +229,7 @@ class V2RayService extends ChangeNotifier {
         blockedApps: blockedAppsList, // Use saved blocked apps list
         bypassSubnets: bypassSubnets,
         proxyOnly:
-            status_proxy, // Use proxy mode based on status_proxy parameter
+            statusProxy, // Use proxy mode based on statusProxy parameter
         notificationDisconnectButtonName: "DISCONNECT",
       );
 
@@ -383,51 +382,93 @@ class V2RayService extends ChangeNotifier {
     }
   }
 
-  // Get server delay/ping for a specific config
+  // Get server delay/ping for a specific config with improved error handling
   Future<int?> getServerDelay(V2RayConfig config) async {
     final configId = config.id;
     final hostKey = '${config.address}:${config.port}';
 
-    // Return cached ping if available - first check by host, then by configId
-    if (_pingCache.containsKey(hostKey)) {
-      return _pingCache[hostKey];
-    } else if (_pingCache.containsKey(configId)) {
-      return _pingCache[configId];
-    }
-
-    // If ping is already in progress for this host or config, wait for it to complete
-    if (_pingInProgress[hostKey] == true || _pingInProgress[configId] == true) {
-      // Wait for the ping to complete (max 5 seconds)
-      int attempts = 0;
-      while ((_pingInProgress[hostKey] == true ||
-              _pingInProgress[configId] == true) &&
-          attempts < 50) {
-        await Future.delayed(Duration(milliseconds: 100));
-        attempts++;
-      }
-      return _pingCache[hostKey] ?? _pingCache[configId];
-    }
-
-    // Mark this host and config as having ping in progress
-    _pingInProgress[hostKey] = true;
-    _pingInProgress[configId] = true;
-
     try {
-      await initialize();
-      V2RayURL parser = FlutterV2ray.parseFromURL(config.fullConfig);
-      final delay = await _flutterV2ray.getServerDelay(
-        config: parser.getFullConfiguration(),
-      );
+      // Return cached ping if available - first check by host, then by configId
+      if (_pingCache.containsKey(hostKey)) {
+        return _pingCache[hostKey];
+      } else if (_pingCache.containsKey(configId)) {
+        return _pingCache[configId];
+      }
 
-      // Cache the result by both host and config ID
-      _pingCache[hostKey] = delay;
-      _pingCache[configId] = delay;
-      _pingInProgress[hostKey] = false;
-      _pingInProgress[configId] = false;
+      // If ping is already in progress for this host or config, wait for it to complete
+      if (_pingInProgress[hostKey] == true || _pingInProgress[configId] == true) {
+        // Wait for the ping to complete (max 5 seconds with shorter intervals)
+        int attempts = 0;
+        while ((_pingInProgress[hostKey] == true ||
+                _pingInProgress[configId] == true) &&
+            attempts < 25) { // Reduced from 50 to 25 attempts
+          await Future.delayed(const Duration(milliseconds: 200)); // Increased interval
+          attempts++;
+        }
+        return _pingCache[hostKey] ?? _pingCache[configId];
+      }
 
-      return delay;
+      // Mark this host and config as having ping in progress
+      _pingInProgress[hostKey] = true;
+      _pingInProgress[configId] = true;
+
+      try {
+        // Initialize V2Ray service with timeout
+        await initialize();
+        
+        // Parse config with error handling
+        V2RayURL parser;
+        try {
+          parser = FlutterV2ray.parseFromURL(config.fullConfig);
+        } catch (parseError) {
+          debugPrint('Error parsing config for ${config.remark}: $parseError');
+          _pingInProgress[hostKey] = false;
+          _pingInProgress[configId] = false;
+          return null;
+        }
+        
+        // Get server delay with timeout and error handling
+        final delay = await _flutterV2ray.getServerDelay(
+          config: parser.getFullConfiguration(),
+        ).timeout(
+          const Duration(seconds: 8),
+          onTimeout: () {
+            debugPrint('Server delay timeout for ${config.remark}');
+            throw Exception('Server delay timeout');
+          },
+        );
+
+        // Validate delay value
+        if (delay != null && delay >= 0 && delay < 10000) {
+          // Cache the result by both host and config ID
+          _pingCache[hostKey] = delay;
+          _pingCache[configId] = delay;
+        } else {
+          // Invalid delay, cache as null
+          _pingCache[hostKey] = null;
+          _pingCache[configId] = null;
+        }
+        
+        _pingInProgress[hostKey] = false;
+        _pingInProgress[configId] = false;
+
+        return delay;
+      } catch (e) {
+        // Check if this is a timeout-related error
+        if (e.toString().contains('timeout')) {
+          debugPrint('Timeout getting server delay for ${config.remark}: $e');
+        } else {
+          debugPrint('Error getting server delay for ${config.remark}: $e');
+        }
+        _pingInProgress[hostKey] = false;
+        _pingInProgress[configId] = false;
+        _pingCache[hostKey] = null;
+        _pingCache[configId] = null;
+        return null;
+      }
     } catch (e) {
-      print('Error getting server delay for ${config.remark}: $e');
+      debugPrint('Unexpected error in getServerDelay for ${config.remark}: $e');
+      // Ensure cleanup even in unexpected errors
       _pingInProgress[hostKey] = false;
       _pingInProgress[configId] = false;
       return null;
@@ -813,6 +854,7 @@ class V2RayService extends ChangeNotifier {
   void dispose() {
     _stopStatusMonitoring();
     _stopUsageMonitoring();
+    super.dispose();
   }
 
   // Usage statistics methods

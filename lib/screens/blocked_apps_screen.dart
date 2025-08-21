@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../services/v2ray_service.dart';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 class BlockedAppsScreen extends StatefulWidget {

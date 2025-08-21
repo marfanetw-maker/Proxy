@@ -82,7 +82,7 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () {
-              throw TimeoutException('Request timed out after 10 seconds');
+              throw Exception('Request timed out after 10 seconds');
             },
           );
 

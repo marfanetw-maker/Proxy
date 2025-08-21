@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../services/v2ray_service.dart';
 import '../services/update_service.dart';
 import '../models/app_update.dart';
 import 'package:url_launcher/url_launcher.dart';

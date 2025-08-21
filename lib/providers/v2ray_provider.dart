@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/v2ray_config.dart';
 import '../models/subscription.dart';
 import '../services/v2ray_service.dart';
@@ -8,7 +7,7 @@ import '../services/server_service.dart';
 class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   final V2RayService _v2rayService = V2RayService();
   final ServerService _serverService = ServerService();
-  bool status_ping_only = false;
+  bool statusPingOnly = false;
   List<V2RayConfig> _configs = [];
   List<Subscription> _subscriptions = [];
   V2RayConfig? _selectedConfig;
@@ -69,7 +68,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
 
         // If we couldn't find the exact active config in our list,
         // try to find a matching one by address and port
-        if (_selectedConfig == null && activeConfig != null) {
+        if (_selectedConfig == null) {
           for (var config in _configs) {
             if (config.address == activeConfig.address &&
                 config.port == activeConfig.port) {
@@ -576,7 +575,12 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     try {
       // Disconnect from current server if connected
       if (_v2rayService.activeConfig != null) {
-        await _v2rayService.disconnect();
+        try {
+          await _v2rayService.disconnect();
+        } catch (e) {
+          debugPrint('Error disconnecting from current server: $e');
+          // Continue with connection attempt even if disconnect failed
+        }
       }
 
       // Try to connect with automatic retry
@@ -585,16 +589,25 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
 
       for (int attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-          // Connect to server
-          success = await _v2rayService.connect(config, _isProxyMode);
+          debugPrint('Connection attempt $attempt/$maxAttempts for ${config.remark}');
+          
+          // Connect to server with timeout
+          success = await _v2rayService.connect(config, _isProxyMode)
+              .timeout(
+                const Duration(seconds: 30), // Timeout for connection
+                onTimeout: () {
+                  debugPrint('Connection timeout for ${config.remark}');
+                  return false;
+                },
+              );
 
           if (success) {
-            // Connection successful, break the retry loop
+            debugPrint('Connection successful for ${config.remark}');
             break;
           } else {
             // Connection failed but no exception was thrown
-            lastError = 'Failed to connect to server on attempt $attempt';
-            print(lastError);
+            lastError = 'Failed to connect to ${config.remark} on attempt $attempt';
+            debugPrint(lastError);
 
             // If this is not the last attempt, wait before retrying
             if (attempt < maxAttempts) {
@@ -602,9 +615,14 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
             }
           }
         } catch (e) {
-          // Exception during connection attempt
-          lastError = 'Error on connection attempt $attempt: $e';
-          print(lastError);
+          // Check if this is a timeout-related error
+          if (e.toString().contains('timeout')) {
+            lastError = 'Connection timeout on attempt $attempt: $e';
+            debugPrint(lastError);
+          } else {
+            lastError = 'Error on connection attempt $attempt: $e';
+            debugPrint(lastError);
+          }
 
           // If this is not the last attempt, wait before retrying
           if (attempt < maxAttempts) {
@@ -614,29 +632,48 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       }
 
       if (success) {
-        // Wait for 3 seconds as requested
-        await Future.delayed(const Duration(seconds: 3));
+        try {
+          // Wait for connection to stabilize
+          await Future.delayed(const Duration(seconds: 2)); // Reduced from 3 to 2 seconds
 
-        // Update config status
-        for (int i = 0; i < _configs.length; i++) {
-          if (_configs[i].id == config.id) {
-            _configs[i].isConnected = true;
-          } else {
-            _configs[i].isConnected = false;
+          // Update config status safely
+          for (int i = 0; i < _configs.length; i++) {
+            if (_configs[i].id == config.id) {
+              _configs[i].isConnected = true;
+            } else {
+              _configs[i].isConnected = false;
+            }
           }
+          _selectedConfig = config;
+
+          // Persist the changes with error handling
+          try {
+            await _v2rayService.saveConfigs(_configs);
+          } catch (e) {
+            debugPrint('Error saving configs after connection: $e');
+            // Don't fail the connection for this
+          }
+
+          // Reset usage statistics when connecting to a new server
+          try {
+            await _v2rayService.resetUsageStats();
+          } catch (e) {
+            debugPrint('Error resetting usage stats: $e');
+            // Don't fail the connection for this
+          }
+          
+          debugPrint('Successfully connected to ${config.remark}');
+        } catch (e) {
+          debugPrint('Error in post-connection setup: $e');
+          // Connection succeeded but post-setup failed
+          _setError('Connected but failed to update settings: $e');
         }
-        _selectedConfig = config;
-
-        // Persist the changes
-        await _v2rayService.saveConfigs(_configs);
-
-        // Reset usage statistics when connecting to a new server
-        await _v2rayService.resetUsageStats();
       } else {
-        _setError('Failed to connect after multiple attempts');
+        _setError('Failed to connect to ${config.remark} after $maxAttempts attempts: $lastError');
       }
     } catch (e) {
-      _setError('Error in connection process: $e');
+      debugPrint('Unexpected error in connection process: $e');
+      _setError('Unexpected error connecting to ${config.remark}: $e');
     } finally {
       _isConnecting = false;
       notifyListeners();
@@ -649,7 +686,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
 
     try {
       await _v2rayService.disconnect();
-      status_ping_only = false;
+      statusPingOnly = false;
       // Update config status
       for (int i = 0; i < _configs.length; i++) {
         _configs[i].isConnected = false;

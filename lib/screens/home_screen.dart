@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/v2ray_provider.dart';
 import '../widgets/connection_button.dart';
 import '../widgets/server_selector.dart';
