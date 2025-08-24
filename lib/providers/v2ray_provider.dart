@@ -15,7 +15,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   bool _isLoading = false;
   String _errorMessage = '';
   bool _isLoadingServers = false;
-  bool _isProxyMode = false; // متغیر جدید برای حالت پروکسی
+  bool _isProxyMode = false;
 
   List<V2RayConfig> get configs => _configs;
   List<Subscription> get subscriptions => _subscriptions;
@@ -26,7 +26,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   bool get isLoadingServers => _isLoadingServers;
   String get errorMessage => _errorMessage;
   V2RayService get v2rayService => _v2rayService;
-  bool get isProxyMode => _isProxyMode; // گتر برای حالت پروکسی
+  bool get isProxyMode => _isProxyMode;
 
   V2RayProvider() {
     WidgetsBinding.instance.addObserver(this);

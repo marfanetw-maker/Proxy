@@ -87,16 +87,15 @@ class V2RayService extends ChangeNotifier {
         );
 
         // Convert the result to a List<Map<String, dynamic>>
-        final List<Map<String, dynamic>> appList =
-            result
-                .map(
-                  (app) => {
-                    'packageName': app['packageName'] as String,
-                    'name': app['name'] as String,
-                    'isSystemApp': app['isSystemApp'] as bool,
-                  },
-                )
-                .toList();
+        final List<Map<String, dynamic>> appList = result
+            .map(
+              (app) => {
+                'packageName': app['packageName'] as String,
+                'name': app['name'] as String,
+                'isSystemApp': app['isSystemApp'] as bool,
+              },
+            )
+            .toList();
 
         return appList;
       } else {
@@ -210,8 +209,9 @@ class V2RayService extends ChangeNotifier {
         // Split the DNS servers string into a list (one per line)
         List<String> serversList = dnsServers.trim().split('\n');
         // Remove any empty entries
-        serversList =
-            serversList.where((server) => server.trim().isNotEmpty).toList();
+        serversList = serversList
+            .where((server) => server.trim().isNotEmpty)
+            .toList();
 
         if (serversList.isNotEmpty) {
           // Set the DNS servers in the parser
@@ -228,8 +228,7 @@ class V2RayService extends ChangeNotifier {
         config: parser.getFullConfiguration(),
         blockedApps: blockedAppsList, // Use saved blocked apps list
         bypassSubnets: bypassSubnets,
-        proxyOnly:
-            statusProxy, // Use proxy mode based on statusProxy parameter
+        proxyOnly: statusProxy, // Use proxy mode based on statusProxy parameter
         notificationDisconnectButtonName: "DISCONNECT",
       );
 
@@ -395,6 +394,7 @@ class V2RayService extends ChangeNotifier {
         return _pingCache[configId];
       }
 
+      /*
       // If ping is already in progress for this host or config, wait for it to complete
       if (_pingInProgress[hostKey] == true || _pingInProgress[configId] == true) {
         // Wait for the ping to complete (max 5 seconds with shorter intervals)
@@ -407,6 +407,7 @@ class V2RayService extends ChangeNotifier {
         }
         return _pingCache[hostKey] ?? _pingCache[configId];
       }
+      */
 
       // Mark this host and config as having ping in progress
       _pingInProgress[hostKey] = true;
@@ -415,7 +416,7 @@ class V2RayService extends ChangeNotifier {
       try {
         // Initialize V2Ray service with timeout
         await initialize();
-        
+
         // Parse config with error handling
         V2RayURL parser;
         try {
@@ -426,20 +427,20 @@ class V2RayService extends ChangeNotifier {
           _pingInProgress[configId] = false;
           return null;
         }
-        
+
         // Get server delay with timeout and error handling
-        final delay = await _flutterV2ray.getServerDelay(
-          config: parser.getFullConfiguration(),
-        ).timeout(
-          const Duration(seconds: 8),
-          onTimeout: () {
-            debugPrint('Server delay timeout for ${config.remark}');
-            throw Exception('Server delay timeout');
-          },
-        );
+        final delay = await _flutterV2ray
+            .getServerDelay(config: parser.getFullConfiguration())
+            .timeout(
+              const Duration(seconds: 16),
+              onTimeout: () {
+                debugPrint('Server delay timeout for ${config.remark}');
+                throw Exception('Server delay timeout');
+              },
+            );
 
         // Validate delay value
-        if (delay != null && delay >= 0 && delay < 10000) {
+        if (delay >= -1 && delay < 10000) {
           // Cache the result by both host and config ID
           _pingCache[hostKey] = delay;
           _pingCache[configId] = delay;
@@ -448,7 +449,7 @@ class V2RayService extends ChangeNotifier {
           _pingCache[hostKey] = null;
           _pingCache[configId] = null;
         }
-        
+
         _pingInProgress[hostKey] = false;
         _pingInProgress[configId] = false;
 
@@ -593,8 +594,9 @@ class V2RayService extends ChangeNotifier {
   // Save and load configurations
   Future<void> saveConfigs(List<V2RayConfig> configs) async {
     final prefs = await SharedPreferences.getInstance();
-    final List<String> configsJson =
-        configs.map((config) => jsonEncode(config.toJson())).toList();
+    final List<String> configsJson = configs
+        .map((config) => jsonEncode(config.toJson()))
+        .toList();
     await prefs.setStringList('v2ray_configs', configsJson);
   }
 
@@ -611,8 +613,9 @@ class V2RayService extends ChangeNotifier {
   // Save and load subscriptions
   Future<void> saveSubscriptions(List<Subscription> subscriptions) async {
     final prefs = await SharedPreferences.getInstance();
-    final List<String> subscriptionsJson =
-        subscriptions.map((sub) => jsonEncode(sub.toJson())).toList();
+    final List<String> subscriptionsJson = subscriptions
+        .map((sub) => jsonEncode(sub.toJson()))
+        .toList();
     await prefs.setStringList('v2ray_subscriptions', subscriptionsJson);
   }
 
@@ -808,7 +811,7 @@ class V2RayService extends ChangeNotifier {
     try {
       // Try to parse as a V2Ray URL
       final parser = FlutterV2ray.parseFromURL(configText);
-      
+
       // Determine the protocol type from the URL prefix
       String configType = '';
       if (configText.startsWith('vmess://')) {
@@ -832,7 +835,7 @@ class V2RayService extends ChangeNotifier {
           port = int.tryParse(parts[1].split('/')[0].split('?')[0]) ?? 0;
         }
       }
-      
+
       // Create a new V2RayConfig object with a generated ID
       return V2RayConfig(
         id: DateTime.now().millisecondsSinceEpoch.toString(),

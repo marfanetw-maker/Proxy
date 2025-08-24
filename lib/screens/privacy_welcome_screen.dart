@@ -56,11 +56,58 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
         );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept the privacy policy to continue'),
-          duration: Duration(seconds: 2),
-        ),
+      // Show warning dialog
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text(
+              'Privacy Policy Not Accepted',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            content: const Text(
+              'You have not accepted the privacy policy. You can continue to use the app, but you will not receive support or help. Do you want to proceed?',
+              style: TextStyle(color: Colors.white70),
+            ),
+            backgroundColor: AppTheme.primaryDark,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: AppTheme.primaryGreen),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('privacy_accepted', true);
+
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => const MainNavigationScreen(),
+                      ),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Proceed Anyway',
+                  style: TextStyle(color: AppTheme.primaryGreen),
+                ),
+              ),
+            ],
+          );
+        },
       );
     }
   }
@@ -137,10 +184,9 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
                               height: 10,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color:
-                                    _currentPage == index
-                                        ? AppTheme.primaryGreen
-                                        : Colors.grey.withOpacity(0.5),
+                                color: _currentPage == index
+                                    ? AppTheme.primaryGreen
+                                    : Colors.grey.withOpacity(0.5),
                               ),
                             ),
                           ),
@@ -150,10 +196,9 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed:
-                                _currentPage == 1 && !_acceptedPrivacy
-                                    ? null
-                                    : _nextPage,
+                            onPressed: _currentPage == 1 && !_acceptedPrivacy
+                                ? null
+                                : _nextPage,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryGreen,
                               padding: const EdgeInsets.symmetric(vertical: 14),

@@ -10,6 +10,7 @@ import 'subscription_management_screen.dart';
 import 'vpn_settings_screen.dart';
 import 'blocked_apps_screen.dart';
 import 'per_app_tunnel_screen.dart';
+import 'backup_restore_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({super.key});
@@ -158,6 +159,21 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const PerAppTunnelScreen(),
+                ),
+              );
+            },
+          ),
+          _buildToolCard(
+            context,
+            title: 'Backup & Restore',
+            description:
+                'Export or import subscriptions, servers, and blocked apps',
+            icon: Icons.backup,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BackupRestoreScreen(),
                 ),
               );
             },
