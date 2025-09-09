@@ -158,7 +158,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         ping = await _v2rayService
             .getServerDelay(config)
             .timeout(
-              const Duration(seconds: 16),
+              const Duration(seconds: 8),
               onTimeout: () {
                 debugPrint('Ping timeout for server ${config.remark}');
                 return -1; // Return -1 on timeout
@@ -204,7 +204,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       return await _v2rayService
           .getServerDelay(config)
           .timeout(
-            const Duration(seconds: 16), // Reduced timeout for better UX
+            const Duration(seconds: 8), // Reduced timeout for better UX
             onTimeout: () {
               debugPrint('Ping timeout for server ${config.remark}');
               return -1; // Return -1 on timeout
@@ -272,7 +272,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
           // Wait for completer to complete or timeout
           selectedConfig = await completer.future.timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 8),
             onTimeout: () {
               debugPrint('Completer timeout reached');
               return null;
@@ -412,7 +412,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       int? ping;
       try {
         ping = await _pingServer(config).timeout(
-          const Duration(seconds: 5),
+          const Duration(seconds: 8),
           onTimeout: () {
             debugPrint('Ping task timeout for server ${config.remark}');
             return -1; // Return -1 on timeout
