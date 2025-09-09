@@ -34,20 +34,22 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   final V2RayService _v2rayService = V2RayService();
   final StreamController<String> _autoConnectStatusStream =
       StreamController<String>.broadcast();
-  
+
   Future<void> _importFromClipboard() async {
     try {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData == null || clipboardData.text == null || clipboardData.text!.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Clipboard is empty')),
-        );
+      if (clipboardData == null ||
+          clipboardData.text == null ||
+          clipboardData.text!.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Clipboard is empty')));
         return;
       }
 
       final provider = Provider.of<V2RayProvider>(context, listen: false);
       final config = await provider.importConfigFromText(clipboardData.text!);
-      
+
       if (config != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Configuration imported successfully')),
@@ -72,7 +74,10 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
   Future<void> _deleteLocalConfig(V2RayConfig config) async {
     try {
-      await Provider.of<V2RayProvider>(context, listen: false).removeConfig(config);
+      await Provider.of<V2RayProvider>(
+        context,
+        listen: false,
+      ).removeConfig(config);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Configuration deleted successfully')),
       );
@@ -82,6 +87,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       );
     }
   }
+
   final Map<String, bool> _cancelPingTasks = {};
   Timer? _batchTimeoutTimer;
   bool _sortByPing = false; // New variable for ping sorting
@@ -155,12 +161,12 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
               const Duration(seconds: 16),
               onTimeout: () {
                 debugPrint('Ping timeout for server ${config.remark}');
-                return -1; // Return null on timeout
+                return -1; // Return -1 on timeout
               },
             );
       } catch (e) {
         debugPrint('Error pinging server ${config.remark}: $e');
-        ping = null;
+        ping = -1; // Return -1 on error
       }
 
       // Check if widget is still mounted and task wasn't cancelled
@@ -173,12 +179,14 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Unexpected error in _loadPingForConfig for ${config.remark}: $e');
+      debugPrint(
+        'Unexpected error in _loadPingForConfig for ${config.remark}: $e',
+      );
       // Safely handle error state
       if (mounted && _cancelPingTasks[config.id] != true) {
         setState(() {
           for (var relatedConfig in relatedConfigs) {
-            _pings[relatedConfig.id] = null;
+            _pings[relatedConfig.id] = -1; // Set -1 for failed pings
             _loadingPings[relatedConfig.id] = false;
           }
         });
@@ -190,7 +198,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     try {
       // Check if task was cancelled or widget unmounted
       if (_cancelPingTasks[config.id] == true || !mounted) {
-        return null;
+        return -1;
       }
 
       return await _v2rayService
@@ -199,12 +207,12 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             const Duration(seconds: 16), // Reduced timeout for better UX
             onTimeout: () {
               debugPrint('Ping timeout for server ${config.remark}');
-              return -1; // Return null on timeout
+              return -1; // Return -1 on timeout
             },
           );
     } catch (e) {
       debugPrint('Error pinging server ${config.remark}: $e');
-      return null;
+      return -1; // Return -1 on error
     }
   }
 
@@ -228,7 +236,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
         // Check mounted state before updating stream
         if (!mounted) break;
-        
+
         try {
           _autoConnectStatusStream.add(
             'Testing batch of ${currentBatch.length} servers...',
@@ -238,14 +246,16 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         }
 
         final completer = Completer<V2RayConfig?>();
-        
+
         // Create a timeout with proper cleanup
         _batchTimeoutTimer?.cancel();
         _batchTimeoutTimer = Timer(const Duration(seconds: 8), () {
           if (!completer.isCompleted && mounted) {
             debugPrint('Batch timeout reached, moving to next batch');
             try {
-              _autoConnectStatusStream.add('Batch timeout, trying next servers...');
+              _autoConnectStatusStream.add(
+                'Batch timeout, trying next servers...',
+              );
             } catch (e) {
               debugPrint('Error updating status stream on timeout: $e');
             }
@@ -255,9 +265,11 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
         try {
           // Start ping tasks for current batch
-          final pingFutures = currentBatch.map((config) => _processPingTask(config, completer));
+          final pingFutures = currentBatch.map(
+            (config) => _processPingTask(config, completer),
+          );
           await Future.wait(pingFutures, eagerError: false);
-          
+
           // Wait for completer to complete or timeout
           selectedConfig = await completer.future.timeout(
             const Duration(seconds: 10),
@@ -266,7 +278,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
               return null;
             },
           );
-          
+
           _batchTimeoutTimer?.cancel();
         } catch (e) {
           if (e.toString().contains('timeout')) {
@@ -293,10 +305,10 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
               'Connecting to ${selectedConfig.remark} (${_pings[selectedConfig.id]}ms)',
             );
           }
-          
+
           // Attempt to connect to the selected server
           await widget.onConfigSelected(selectedConfig);
-          
+
           // Safe navigation with proper checks
           if (mounted && Navigator.of(context).canPop()) {
             Navigator.of(context).pop(); // Close auto-connect dialog
@@ -327,12 +339,14 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         if (mounted) {
           try {
             _autoConnectStatusStream.add('No suitable server found');
-            
+
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop(); // Close auto-connect dialog
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('No server with valid ping found. Please try again.'),
+                  content: Text(
+                    'No server with valid ping found. Please try again.',
+                  ),
                   backgroundColor: Colors.orange,
                 ),
               );
@@ -344,7 +358,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       }
     } catch (e) {
       debugPrint('Error in auto connect algorithm: $e');
-      
+
       // Safe error handling with navigation
       if (mounted) {
         try {
@@ -378,7 +392,9 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     Completer<V2RayConfig?> completer,
   ) async {
     // Early return if widget unmounted or completer already completed
-    if (!mounted || completer.isCompleted || _cancelPingTasks[config.id] == true) {
+    if (!mounted ||
+        completer.isCompleted ||
+        _cancelPingTasks[config.id] == true) {
       return;
     }
 
@@ -399,7 +415,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
           const Duration(seconds: 5),
           onTimeout: () {
             debugPrint('Ping task timeout for server ${config.remark}');
-            return null;
+            return -1; // Return -1 on timeout
           },
         );
       } catch (e) {
@@ -408,11 +424,13 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         } else {
           debugPrint('Error pinging server in task ${config.remark}: $e');
         }
-        ping = null;
+        ping = -1; // Return -1 on error
       }
 
       // Check if we should continue (widget still mounted and completer not completed)
-      if (!mounted || completer.isCompleted || _cancelPingTasks[config.id] == true) {
+      if (!mounted ||
+          completer.isCompleted ||
+          _cancelPingTasks[config.id] == true) {
         return;
       }
 
@@ -429,7 +447,8 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       }
 
       // Check if we found a valid server
-      if (ping != null && ping > 0 && ping < 5000) { // Valid ping range
+      if (ping != null && ping > 0 && ping < 5000) {
+        // Valid ping range
         if (mounted && !completer.isCompleted) {
           try {
             _autoConnectStatusStream.add(
@@ -438,32 +457,40 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             _cancelAllPingTasks();
             completer.complete(config);
           } catch (e) {
-            debugPrint('Error completing successful ping for ${config.remark}: $e');
+            debugPrint(
+              'Error completing successful ping for ${config.remark}: $e',
+            );
           }
         }
       } else {
         // Server failed or had invalid ping
         if (mounted && !completer.isCompleted) {
           try {
-            _autoConnectStatusStream.add('${config.remark} failed or timed out');
+            _autoConnectStatusStream.add(
+              '${config.remark} failed or timed out',
+            );
           } catch (e) {
             debugPrint('Error updating failed status for ${config.remark}: $e');
           }
         }
       }
     } catch (e) {
-      debugPrint('Unexpected error in _processPingTask for ${config.remark}: $e');
-      
+      debugPrint(
+        'Unexpected error in _processPingTask for ${config.remark}: $e',
+      );
+
       // Safely update loading state on error
       try {
         if (mounted && !completer.isCompleted) {
           setState(() {
-            _pings[config.id] = null;
+            _pings[config.id] = -1; // Set -1 for failed pings
             _loadingPings[config.id] = false;
           });
         }
       } catch (stateError) {
-        debugPrint('Error updating error state for ${config.remark}: $stateError');
+        debugPrint(
+          'Error updating error state for ${config.remark}: $stateError',
+        );
       }
     }
   }
@@ -478,129 +505,142 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     final subscriptions = provider.subscriptions;
     final configs = provider.configs;
 
-    final filterOptions = ['All', 'Local', ...subscriptions.map((sub) => sub.name)];
+    final filterOptions = [
+      'All',
+      'Local',
+      ...subscriptions.map((sub) => sub.name),
+    ];
 
     // Add sort and ping buttons in the app bar actions
     final List<Widget> appBarActions = [
       // Ping button
       IconButton(
-        icon:
-            _isPingingServers
-                ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppTheme.primaryGreen,
-                    ),
+        icon: _isPingingServers
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppTheme.primaryGreen,
                   ),
-                )
-                : const Icon(Icons.network_check),
+                ),
+              )
+            : const Icon(Icons.network_check),
         tooltip: 'Test Ping',
-        onPressed:
-            _isPingingServers
-                ? null
-                : () async {
-                  // Prevent multiple ping operations at once
-                  if (_isPingingServers) return;
-                  
-                  try {
-                    if (mounted) {
-                      setState(() {
-                        _isPingingServers = true;
-                        // Clear existing pings when starting new test
-                        _pings.clear();
-                        _loadingPings.clear();
-                      });
-                    }
+        onPressed: _isPingingServers
+            ? null
+            : () async {
+                // Prevent multiple ping operations at once
+                if (_isPingingServers) return;
 
-                    if (_selectedFilter == 'All') {
-                      await _loadAllPings();
-                    } else if (_selectedFilter == 'Local') {
-                      // Get local configs (not in any subscription)
-                      final allSubscriptionConfigIds = subscriptions
-                          .expand((sub) => sub.configIds)
-                          .toSet();
-                      final provider = Provider.of<V2RayProvider>(context, listen: false);
+                try {
+                  if (mounted) {
+                    setState(() {
+                      _isPingingServers = true;
+                      // Clear existing pings when starting new test
+                      _pings.clear();
+                      _loadingPings.clear();
+                    });
+                  }
+
+                  if (_selectedFilter == 'All') {
+                    await _loadAllPings();
+                  } else if (_selectedFilter == 'Local') {
+                    // Get local configs (not in any subscription)
+                    final allSubscriptionConfigIds = subscriptions
+                        .expand((sub) => sub.configIds)
+                        .toSet();
+                    final provider = Provider.of<V2RayProvider>(
+                      context,
+                      listen: false,
+                    );
+                    final allConfigs = provider.configs;
+                    final localConfigs = allConfigs
+                        .where(
+                          (config) =>
+                              !allSubscriptionConfigIds.contains(config.id),
+                        )
+                        .toList();
+
+                    // Test pings for local configs with error handling
+                    for (var config in localConfigs) {
+                      if (!mounted) break;
+                      try {
+                        await _loadPingForConfig(config, [config]);
+                      } catch (e) {
+                        debugPrint(
+                          'Error pinging local config ${config.remark}: $e',
+                        );
+                        // Continue with next config instead of crashing
+                      }
+                    }
+                  } else {
+                    try {
+                      final subscription = subscriptions.firstWhere(
+                        (sub) => sub.name == _selectedFilter,
+                        orElse: () => Subscription(
+                          id: '',
+                          name: '',
+                          url: '',
+                          lastUpdated: DateTime.now(),
+                          configIds: [],
+                        ),
+                      );
+                      final provider = Provider.of<V2RayProvider>(
+                        context,
+                        listen: false,
+                      );
                       final allConfigs = provider.configs;
-                      final localConfigs = allConfigs
-                          .where((config) => !allSubscriptionConfigIds.contains(config.id))
+                      final configsToTest = allConfigs
+                          .where(
+                            (config) =>
+                                subscription.configIds.contains(config.id),
+                          )
                           .toList();
-                      
-                      // Test pings for local configs with error handling
-                      for (var config in localConfigs) {
+
+                      // Test pings for subscription configs with error handling
+                      for (var config in configsToTest) {
                         if (!mounted) break;
                         try {
                           await _loadPingForConfig(config, [config]);
                         } catch (e) {
-                          debugPrint('Error pinging local config ${config.remark}: $e');
+                          debugPrint(
+                            'Error pinging subscription config ${config.remark}: $e',
+                          );
                           // Continue with next config instead of crashing
                         }
                       }
-                    } else {
-                      try {
-                        final subscription = subscriptions.firstWhere(
-                          (sub) => sub.name == _selectedFilter,
-                          orElse:
-                              () => Subscription(
-                                id: '',
-                                name: '',
-                                url: '',
-                                lastUpdated: DateTime.now(),
-                                configIds: [],
-                              ),
+                    } catch (e) {
+                      debugPrint('Error processing subscription filter: $e');
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error testing servers: $e'),
+                            backgroundColor: Colors.red,
+                          ),
                         );
-                        final provider = Provider.of<V2RayProvider>(context, listen: false);
-                        final allConfigs = provider.configs;
-                        final configsToTest =
-                            allConfigs
-                                .where(
-                                  (config) =>
-                                      subscription.configIds.contains(config.id),
-                                )
-                                .toList();
-                        
-                        // Test pings for subscription configs with error handling
-                        for (var config in configsToTest) {
-                          if (!mounted) break;
-                          try {
-                            await _loadPingForConfig(config, [config]);
-                          } catch (e) {
-                            debugPrint('Error pinging subscription config ${config.remark}: $e');
-                            // Continue with next config instead of crashing
-                          }
-                        }
-                      } catch (e) {
-                        debugPrint('Error processing subscription filter: $e');
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error testing servers: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
                       }
                     }
-                  } catch (e) {
-                    debugPrint('Error in ping operation: $e');
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error testing servers: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  } finally {
-                    if (mounted) {
-                      setState(() {
-                        _isPingingServers = false;
-                      });
-                    }
                   }
-                },
+                } catch (e) {
+                  debugPrint('Error in ping operation: $e');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error testing servers: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() {
+                      _isPingingServers = false;
+                    });
+                  }
+                }
+              },
       ),
       // Sort button
       IconButton(
@@ -636,19 +676,17 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     } else {
       final subscription = subscriptions.firstWhere(
         (sub) => sub.name == _selectedFilter,
-        orElse:
-            () => Subscription(
-              id: '',
-              name: '',
-              url: '',
-              lastUpdated: DateTime.now(),
-              configIds: [],
-            ),
+        orElse: () => Subscription(
+          id: '',
+          name: '',
+          url: '',
+          lastUpdated: DateTime.now(),
+          configIds: [],
+        ),
       );
-      filteredConfigs =
-          configs
-              .where((config) => subscription.configIds.contains(config.id))
-              .toList();
+      filteredConfigs = configs
+          .where((config) => subscription.configIds.contains(config.id))
+          .toList();
     }
 
     // Sort configs by ping if enabled
@@ -662,9 +700,15 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         final isValidPingB = pingB != null && pingB > 0;
 
         // Handle invalid pings - put them at the bottom
-        if (!isValidPingA && !isValidPingB) return 0;
-        if (!isValidPingA) return 1;
-        if (!isValidPingB) return -1;
+        if (!isValidPingA && !isValidPingB) {
+          // Both invalid, but prioritize -1 (timeout) over null (no test)
+          if (pingA == -1 && pingB == -1) return 0;
+          if (pingA == -1 && pingB == null) return -1;
+          if (pingA == null && pingB == -1) return 1;
+          return 0;
+        }
+        if (!isValidPingA) return 1; // Invalid pings go to bottom
+        if (!isValidPingB) return -1; // Valid pings stay on top
 
         // Sort by ping value (only valid pings reach here)
         return _sortAscending ? pingA.compareTo(pingB) : pingB.compareTo(pingA);
@@ -673,11 +717,13 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.primaryDark,
-      floatingActionButton: _selectedFilter == 'Local' ? FloatingActionButton(
-        onPressed: _importFromClipboard,
-        backgroundColor: AppTheme.primaryGreen,
-        child: const Icon(Icons.paste),
-      ) : null,
+      floatingActionButton: _selectedFilter == 'Local'
+          ? FloatingActionButton(
+              onPressed: _importFromClipboard,
+              backgroundColor: AppTheme.primaryGreen,
+              child: const Icon(Icons.paste),
+            )
+          : null,
       appBar: AppBar(
         title: const Text('Select Server'),
         backgroundColor: AppTheme.primaryDark,
@@ -688,62 +734,61 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () async {
-              try {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Updating servers...'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-
-                if (_selectedFilter == 'All') {
-                  await provider.updateAllSubscriptions();
-                } else if (_selectedFilter != 'Default') {
-                  final subscription = subscriptions.firstWhere(
-                    (sub) => sub.name == _selectedFilter,
-                    orElse:
-                        () => Subscription(
-                          id: '',
-                          name: '',
-                          url: '',
-                          lastUpdated: DateTime.now(),
-                          configIds: [],
-                        ),
-                  );
-                  if (subscription.id.isNotEmpty) {
-                    await provider.updateSubscription(subscription);
-                  }
-                }
-
-                setState(() {});
-                await _loadAllPings();
-
-                if (provider.errorMessage.isNotEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(provider.errorMessage),
-                      backgroundColor: Colors.red.shade700,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                  provider.clearError();
-                } else {
+                try {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Servers updated successfully'),
+                      content: Text('Updating servers...'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+
+                  if (_selectedFilter == 'All') {
+                    await provider.updateAllSubscriptions();
+                  } else if (_selectedFilter != 'Default') {
+                    final subscription = subscriptions.firstWhere(
+                      (sub) => sub.name == _selectedFilter,
+                      orElse: () => Subscription(
+                        id: '',
+                        name: '',
+                        url: '',
+                        lastUpdated: DateTime.now(),
+                        configIds: [],
+                      ),
+                    );
+                    if (subscription.id.isNotEmpty) {
+                      await provider.updateSubscription(subscription);
+                    }
+                  }
+
+                  setState(() {});
+                  await _loadAllPings();
+
+                  if (provider.errorMessage.isNotEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(provider.errorMessage),
+                        backgroundColor: Colors.red.shade700,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                    provider.clearError();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Servers updated successfully'),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error updating servers: ${e.toString()}'),
                     ),
                   );
                 }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error updating servers: ${e.toString()}'),
-                  ),
-                );
-              }
-            },
-            tooltip: 'Update Servers',
-          ),
+              },
+              tooltip: 'Update Servers',
+            ),
         ],
       ),
       body: Column(
@@ -776,8 +821,9 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                     selectedColor: AppTheme.primaryGreen,
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.white : Colors.grey,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                 );
@@ -785,185 +831,21 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             ),
           ),
           Expanded(
-            child:
-                filteredConfigs.isEmpty
-                    ? Center(
-                      child: Text(
-                        'No servers available for $_selectedFilter',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    )
-                    : ListView.builder(
-                      itemCount: filteredConfigs.length + 1,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            color: AppTheme.cardDark,
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: InkWell(
-                              onTap:
-                                  widget.isConnecting
-                                      ? null
-                                      : () async {
-                                        final provider =
-                                            Provider.of<V2RayProvider>(
-                                              context,
-                                              listen: false,
-                                            );
-                                        if (provider.activeConfig != null) {
-                                          showDialog(
-                                            context: context,
-                                            builder:
-                                                (context) => AlertDialog(
-                                                  backgroundColor:
-                                                      AppTheme.secondaryDark,
-                                                  title: const Text(
-                                                    'Connection Active',
-                                                  ),
-                                                  content: const Text(
-                                                    'Please disconnect from VPN before selecting a different server.',
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed:
-                                                          () => Navigator.pop(
-                                                            context,
-                                                          ),
-                                                      child: const Text(
-                                                        'OK',
-                                                        style: TextStyle(
-                                                          color:
-                                                              AppTheme
-                                                                  .primaryGreen,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                          );
-                                        } else {
-                                          showDialog(
-                                            context: context,
-                                            barrierDismissible: false,
-                                            builder:
-                                                (context) => AlertDialog(
-                                                  backgroundColor:
-                                                      AppTheme.secondaryDark,
-                                                  title: const Text(
-                                                    'Auto Select',
-                                                  ),
-                                                  content: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      const CircularProgressIndicator(
-                                                        valueColor:
-                                                            AlwaysStoppedAnimation<
-                                                              Color
-                                                            >(
-                                                              AppTheme
-                                                                  .primaryGreen,
-                                                            ),
-                                                      ),
-                                                      const SizedBox(
-                                                        height: 16,
-                                                      ),
-                                                      const Text(
-                                                        'Testing servers for fastest connection...',
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      StreamBuilder<String>(
-                                                        stream:
-                                                            _autoConnectStatusStream
-                                                                .stream,
-                                                        builder: (
-                                                          context,
-                                                          snapshot,
-                                                        ) {
-                                                          return Text(
-                                                            snapshot.data ??
-                                                                'Starting tests...',
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 12,
-                                                                  color:
-                                                                      Colors
-                                                                          .grey,
-                                                                ),
-                                                          );
-                                                        },
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                          );
-                                          await _runAutoConnectAlgorithm(
-                                            filteredConfigs,
-                                            context,
-                                          );
-                                        }
-                                      },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 16,
-                                      height: 16,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppTheme.primaryGreen,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    const Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Auto Select',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 4),
-                                          Text(
-                                            'Connect to server with lowest ping',
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.bolt,
-                                      color: AppTheme.primaryGreen,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-
-                        final config = filteredConfigs[index - 1];
-                        final isSelected =
-                            provider.selectedConfig?.id == config.id;
-
+            child: filteredConfigs.isEmpty
+                ? Center(
+                    child: Text(
+                      'No servers available for $_selectedFilter',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: filteredConfigs.length + 1,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           color: AppTheme.cardDark,
@@ -972,66 +854,85 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: InkWell(
-                            onTap:
-                                widget.isConnecting
-                                    ? null
-                                    : () async {
-                                      final provider =
-                                          Provider.of<V2RayProvider>(
-                                            context,
-                                            listen: false,
-                                          );
-                                      if (provider.activeConfig != null) {
-                                        showDialog(
-                                          context: context,
-                                          builder:
-                                              (context) => AlertDialog(
-                                                backgroundColor:
-                                                    AppTheme.secondaryDark,
-                                                title: const Text(
-                                                  'Connection Active',
+                            onTap: widget.isConnecting
+                                ? null
+                                : () async {
+                                    final provider = Provider.of<V2RayProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                    if (provider.activeConfig != null) {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          backgroundColor:
+                                              AppTheme.secondaryDark,
+                                          title: const Text(
+                                            'Connection Active',
+                                          ),
+                                          content: const Text(
+                                            'Please disconnect from VPN before selecting a different server.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: const Text(
+                                                'OK',
+                                                style: TextStyle(
+                                                  color: AppTheme.primaryGreen,
                                                 ),
-                                                content: const Text(
-                                                  'Please disconnect from VPN before selecting a different server.',
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed:
-                                                        () => Navigator.pop(
-                                                          context,
-                                                        ),
-                                                    child: const Text(
-                                                      'OK',
-                                                      style: TextStyle(
-                                                        color:
-                                                            AppTheme
-                                                                .primaryGreen,
-                                                      ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    } else {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (context) => AlertDialog(
+                                          backgroundColor:
+                                              AppTheme.secondaryDark,
+                                          title: const Text('Auto Select'),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const CircularProgressIndicator(
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(AppTheme.primaryGreen),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              const Text(
+                                                'Testing servers for fastest connection...',
+                                              ),
+                                              const SizedBox(height: 8),
+                                              StreamBuilder<String>(
+                                                stream: _autoConnectStatusStream
+                                                    .stream,
+                                                builder: (context, snapshot) {
+                                                  return Text(
+                                                    snapshot.data ??
+                                                        'Starting tests...',
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey,
                                                     ),
-                                                  ),
-                                                ],
+                                                  );
+                                                },
                                               ),
-                                        );
-                                      } else {
-                                        try {
-                                          await widget.onConfigSelected(config);
-                                          if (mounted &&
-                                              Navigator.of(context).canPop()) {
-                                            Navigator.pop(context);
-                                          }
-                                        } catch (e) {
-                                          debugPrint('Error selecting server ${config.remark}: $e');
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('Failed to connect to ${config.remark}: $e'),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      }
-                                    },
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                      await _runAutoConnectAlgorithm(
+                                        filteredConfigs,
+                                        context,
+                                      );
+                                    }
+                                  },
                             borderRadius: BorderRadius.circular(12),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
@@ -1042,45 +943,161 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                     height: 16,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color:
-                                          isSelected
-                                              ? AppTheme.primaryGreen
-                                              : AppTheme.textGrey,
+                                      color: AppTheme.primaryGreen,
                                     ),
                                   ),
                                   const SizedBox(width: 16),
-                                  Expanded(
+                                  const Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                config.remark,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight:
-                                                      isSelected
-                                                          ? FontWeight.bold
-                                                          : FontWeight.normal,
-                                                  color: Colors.white,
-                                                ),
+                                        Text(
+                                          'Auto Select',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Connect to server with lowest ping',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.bolt,
+                                    color: AppTheme.primaryGreen,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final config = filteredConfigs[index - 1];
+                      final isSelected =
+                          provider.selectedConfig?.id == config.id;
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        color: AppTheme.cardDark,
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
+                          onTap: widget.isConnecting
+                              ? null
+                              : () async {
+                                  final provider = Provider.of<V2RayProvider>(
+                                    context,
+                                    listen: false,
+                                  );
+                                  if (provider.activeConfig != null) {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        backgroundColor: AppTheme.secondaryDark,
+                                        title: const Text('Connection Active'),
+                                        content: const Text(
+                                          'Please disconnect from VPN before selecting a different server.',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: const Text(
+                                              'OK',
+                                              style: TextStyle(
+                                                color: AppTheme.primaryGreen,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            if (_selectedFilter == 'Local')
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.delete,
-                                                  color: Colors.red,
-                                                  size: 20,
-                                                ),
-                                                onPressed: () => _deleteLocalConfig(config),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  } else {
+                                    try {
+                                      await widget.onConfigSelected(config);
+                                      if (mounted &&
+                                          Navigator.of(context).canPop()) {
+                                        Navigator.pop(context);
+                                      }
+                                    } catch (e) {
+                                      debugPrint(
+                                        'Error selecting server ${config.remark}: $e',
+                                      );
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Failed to connect to ${config.remark}: $e',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isSelected
+                                        ? AppTheme.primaryGreen
+                                        : AppTheme.textGrey,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              config.remark,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: isSelected
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
+                                                color: Colors.white,
                                               ),
-                                            _loadingPings[config.id] == true
-                                                ? const SizedBox(
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          if (_selectedFilter == 'Local')
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                                size: 20,
+                                              ),
+                                              onPressed: () =>
+                                                  _deleteLocalConfig(config),
+                                            ),
+                                          _loadingPings[config.id] == true
+                                              ? const SizedBox(
                                                   width: 12,
                                                   height: 12,
                                                   child: CircularProgressIndicator(
@@ -1093,8 +1110,9 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                                         ),
                                                   ),
                                                 )
-                                                : _pings[config.id] != null
-                                                ? Text(
+                                              : _pings[config.id] != null &&
+                                                    _pings[config.id]! > 0
+                                              ? Text(
                                                   '${_pings[config.id]}ms',
                                                   style: TextStyle(
                                                     color:
@@ -1103,87 +1121,93 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 )
-                                                : const SizedBox.shrink(),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${config.address}:${config.port}',
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
+                                              : _pings[config.id] == -1
+                                              ? const Text(
+                                                  '-1',
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
                                                   ),
-                                              decoration: BoxDecoration(
+                                                )
+                                              : const SizedBox.shrink(),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${config.address}:${config.port}',
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _getConfigTypeColor(
+                                                config.configType,
+                                              ).withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              config.configType
+                                                  .toString()
+                                                  .toUpperCase(),
+                                              style: TextStyle(
                                                 color: _getConfigTypeColor(
                                                   config.configType,
-                                                ).withOpacity(0.2),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                config.configType
-                                                    .toString()
-                                                    .toUpperCase(),
-                                                style: TextStyle(
-                                                  color: _getConfigTypeColor(
-                                                    config.configType,
-                                                  ),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
                                                 ),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blueGrey
-                                                    .withOpacity(0.2),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                _getSubscriptionName(config),
-                                                style: const TextStyle(
-                                                  color: Colors.blueGrey,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blueGrey
+                                                  .withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              _getSubscriptionName(config),
+                                              style: const TextStyle(
+                                                color: Colors.blueGrey,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    color:
-                                        isSelected
-                                            ? AppTheme.primaryGreen
-                                            : Colors.grey,
-                                  ),
-                                ],
-                              ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: isSelected
+                                      ? AppTheme.primaryGreen
+                                      : Colors.grey,
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -1204,19 +1228,20 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   }
 
   String _getSubscriptionName(V2RayConfig config) {
-    final subscriptions =
-        Provider.of<V2RayProvider>(context, listen: false).subscriptions;
+    final subscriptions = Provider.of<V2RayProvider>(
+      context,
+      listen: false,
+    ).subscriptions;
     return subscriptions
         .firstWhere(
           (sub) => sub.configIds.contains(config.id),
-          orElse:
-              () => Subscription(
-                id: '',
-                name: 'Default Subscription',
-                url: '',
-                lastUpdated: DateTime.now(),
-                configIds: [],
-              ),
+          orElse: () => Subscription(
+            id: '',
+            name: 'Default Subscription',
+            url: '',
+            lastUpdated: DateTime.now(),
+            configIds: [],
+          ),
         )
         .name;
   }
@@ -1233,23 +1258,22 @@ void showServerSelectionScreen({
   if (provider.activeConfig != null) {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: AppTheme.secondaryDark,
-            title: const Text('Connection Active'),
-            content: const Text(
-              'Please disconnect from VPN before selecting a different server.',
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.secondaryDark,
+        title: const Text('Connection Active'),
+        content: const Text(
+          'Please disconnect from VPN before selecting a different server.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: AppTheme.primaryGreen),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'OK',
-                  style: TextStyle(color: AppTheme.primaryGreen),
-                ),
-              ),
-            ],
           ),
+        ],
+      ),
     );
     return;
   }
@@ -1257,13 +1281,12 @@ void showServerSelectionScreen({
   Navigator.push(
     context,
     MaterialPageRoute(
-      builder:
-          (context) => ServerSelectionScreen(
-            configs: configs,
-            selectedConfig: selectedConfig,
-            isConnecting: isConnecting,
-            onConfigSelected: onConfigSelected,
-          ),
+      builder: (context) => ServerSelectionScreen(
+        configs: configs,
+        selectedConfig: selectedConfig,
+        isConnecting: isConnecting,
+        onConfigSelected: onConfigSelected,
+      ),
     ),
   );
 }

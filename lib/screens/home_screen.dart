@@ -4,7 +4,6 @@ import '../providers/v2ray_provider.dart';
 import '../widgets/connection_button.dart';
 import '../widgets/server_selector.dart';
 import '../widgets/background_gradient.dart';
-import '../widgets/error_snackbar.dart';
 import '../theme/app_theme.dart';
 import 'about_screen.dart';
 import '../services/v2ray_service.dart';
@@ -33,8 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onProviderChanged() {
-    // Check if the provider is connected and not connecting
-    final v2rayProvider = Provider.of<V2RayProvider>(context, listen: false);
     // Ping functionality removed
   }
 
@@ -42,105 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _urlController.dispose();
     super.dispose();
-  }
-
-  Future<void> _showAddSubscriptionDialog(BuildContext context) async {
-    final TextEditingController _nameController = TextEditingController(
-      text: 'New Subscription',
-    );
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Add Subscription'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Subscription Name',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _urlController,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Subscription URL',
-                    hintText: 'Enter subscription URL',
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final provider = Provider.of<V2RayProvider>(
-                    context,
-                    listen: false,
-                  );
-                  final url = _urlController.text.trim();
-                  final name = _nameController.text.trim();
-
-                  if (url.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a subscription URL'),
-                      ),
-                    );
-                    return;
-                  }
-
-                  if (name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a subscription name'),
-                      ),
-                    );
-                    return;
-                  }
-
-                  Navigator.pop(context);
-
-                  // Show a loading snackbar
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Adding subscription...'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-
-                  try {
-                    // Add subscription with URL
-                    await provider.addSubscription(name, url);
-
-                    // Check if there was an error
-                    if (provider.errorMessage.isNotEmpty) {
-                      ErrorSnackbar.show(context, provider.errorMessage);
-                      provider.clearError();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Subscription added successfully'),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    ErrorSnackbar.show(context, 'Error: ${e.toString()}');
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
-          ),
-    );
   }
 
   @override

@@ -21,7 +21,6 @@ class ToolsScreen extends StatefulWidget {
 
 class _ToolsScreenState extends State<ToolsScreen> {
   AppUpdate? _update;
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -35,7 +34,6 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
     setState(() {
       _update = update;
-      _isLoading = false;
     });
   }
 

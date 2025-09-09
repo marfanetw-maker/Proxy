@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/v2ray_config.dart';
 import '../providers/v2ray_provider.dart';
-import '../services/v2ray_service.dart';
 
 class ServerListItem extends StatefulWidget {
   final V2RayConfig config;
@@ -14,49 +13,16 @@ class ServerListItem extends StatefulWidget {
 }
 
 class _ServerListItemState extends State<ServerListItem> {
-  int? _ping;
-  bool _isLoadingPing = false;
-  final V2RayService _v2rayService = V2RayService();
-
   @override
   void initState() {
     super.initState();
-    _getServerPing();
+    // Ping functionality removed
   }
 
   @override
   void didUpdateWidget(ServerListItem oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only get ping again if the config has changed
-    if (oldWidget.config.id != widget.config.id) {
-      _getServerPing();
-    }
-  }
-
-  Future<void> _getServerPing() async {
-    if (mounted) {
-      setState(() {
-        _isLoadingPing = true;
-      });
-    }
-
-    try {
-      final delay = await _v2rayService.getServerDelay(widget.config);
-
-      if (mounted) {
-        setState(() {
-          _ping = delay;
-          _isLoadingPing = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _ping = null;
-          _isLoadingPing = false;
-        });
-      }
-    }
+    // Ping functionality removed
   }
 
   @override
@@ -90,10 +56,9 @@ class _ServerListItemState extends State<ServerListItem> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color:
-                                isActive
-                                    ? Theme.of(context).colorScheme.primary
-                                    : null,
+                            color: isActive
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -109,26 +74,25 @@ class _ServerListItemState extends State<ServerListItem> {
                         onPressed: () {
                           showDialog(
                             context: context,
-                            builder:
-                                (context) => AlertDialog(
-                                  title: const Text('Delete Configuration'),
-                                  content: Text(
-                                    'Are you sure you want to delete ${widget.config.remark}?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        provider.removeConfig(widget.config);
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Delete'),
-                                    ),
-                                  ],
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Configuration'),
+                              content: Text(
+                                'Are you sure you want to delete ${widget.config.remark}?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
                                 ),
+                                TextButton(
+                                  onPressed: () {
+                                    provider.removeConfig(widget.config);
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
                           );
                         },
                         tooltip: 'Delete',
@@ -188,18 +152,16 @@ class _ServerListItemState extends State<ServerListItem> {
                   ),
                   if (isSelected)
                     ElevatedButton(
-                      onPressed:
-                          isActive
-                              ? () async => await provider.disconnect()
-                              : () async => await provider.connectToServer(
-                                widget.config,
-                                provider.isProxyMode,
-                              ),
+                      onPressed: isActive
+                          ? () async => await provider.disconnect()
+                          : () async => await provider.connectToServer(
+                              widget.config,
+                              provider.isProxyMode,
+                            ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            isActive
-                                ? Colors.red
-                                : Theme.of(context).colorScheme.primary,
+                        backgroundColor: isActive
+                            ? Colors.red
+                            : Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                       ),
                       child: Text(isActive ? 'Disconnect' : 'Connect'),

@@ -8,6 +8,7 @@ import 'package:flutter_application_1/models/v2ray_config.dart';
 import 'package:flutter_application_1/models/subscription.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_application_1/services/ping_service.dart';
 
 class IpInfo {
   final String ip;
@@ -56,7 +57,6 @@ class V2RayService extends ChangeNotifier {
   bool _isInitialized = false;
   V2RayConfig? _activeConfig;
   Timer? _statusCheckTimer;
-  bool _statusCheckRunning = false;
   DateTime? _lastConnectionTime;
 
   // IP Information
@@ -115,6 +115,8 @@ class V2RayService extends ChangeNotifier {
     } else {
       _pingCache.clear();
     }
+    // Also clear native ping service cache
+    NativePingService.clearCache();
   }
 
   // Singleton pattern
@@ -133,6 +135,18 @@ class V2RayService extends ChangeNotifier {
 
     // Load saved usage statistics
     _loadUsageStats();
+
+    // Initialize native ping service
+    _initializeNativePing();
+  }
+
+  Future<void> _initializeNativePing() async {
+    try {
+      await NativePingService.initialize();
+      debugPrint('Native ping service initialized successfully');
+    } catch (e) {
+      debugPrint('Error initializing native ping service: $e');
+    }
   }
 
   void _handleStatusChange(V2RayStatus status) {
@@ -381,7 +395,7 @@ class V2RayService extends ChangeNotifier {
     }
   }
 
-  // Get server delay/ping for a specific config with improved error handling
+  // Get server delay/ping for a specific config using custom native implementation
   Future<int?> getServerDelay(V2RayConfig config) async {
     final configId = config.id;
     final hostKey = '${config.address}:${config.port}';
@@ -389,78 +403,98 @@ class V2RayService extends ChangeNotifier {
     try {
       // Return cached ping if available - first check by host, then by configId
       if (_pingCache.containsKey(hostKey)) {
-        return _pingCache[hostKey];
+        final cachedValue = _pingCache[hostKey];
+        // Check if cached value is not too old (30 seconds)
+        if (cachedValue != null) {
+          return cachedValue;
+        }
       } else if (_pingCache.containsKey(configId)) {
-        return _pingCache[configId];
+        final cachedValue = _pingCache[configId];
+        if (cachedValue != null) {
+          return cachedValue;
+        }
       }
 
-      /*
-      // If ping is already in progress for this host or config, wait for it to complete
-      if (_pingInProgress[hostKey] == true || _pingInProgress[configId] == true) {
-        // Wait for the ping to complete (max 5 seconds with shorter intervals)
+      // Check if ping is already in progress for this host or config
+      if (_pingInProgress[hostKey] == true ||
+          _pingInProgress[configId] == true) {
+        // Wait for existing ping to complete (max 5 seconds)
         int attempts = 0;
         while ((_pingInProgress[hostKey] == true ||
                 _pingInProgress[configId] == true) &&
-            attempts < 25) { // Reduced from 50 to 25 attempts
-          await Future.delayed(const Duration(milliseconds: 200)); // Increased interval
+            attempts < 25) {
+          await Future.delayed(const Duration(milliseconds: 200));
           attempts++;
         }
         return _pingCache[hostKey] ?? _pingCache[configId];
       }
-      */
 
       // Mark this host and config as having ping in progress
       _pingInProgress[hostKey] = true;
       _pingInProgress[configId] = true;
 
       try {
-        // Initialize V2Ray service with timeout
-        await initialize();
+        // Use custom native ping service for better accuracy
+        final pingResult = await NativePingService.pingHost(
+          host: config.address,
+          port: config.port,
+          timeoutMs: 8000, // 8 second timeout
+          useIcmp: true,
+          useTcp: true,
+          useCache: false, // We handle our own caching
+        );
 
-        // Parse config with error handling
-        V2RayURL parser;
-        try {
-          parser = FlutterV2ray.parseFromURL(config.fullConfig);
-        } catch (parseError) {
-          debugPrint('Error parsing config for ${config.remark}: $parseError');
-          _pingInProgress[hostKey] = false;
-          _pingInProgress[configId] = false;
-          return null;
-        }
+        final int? delay = pingResult.success ? pingResult.latency : null;
 
-        // Get server delay with timeout and error handling
-        final delay = await _flutterV2ray
-            .getServerDelay(config: parser.getFullConfiguration())
-            .timeout(
-              const Duration(seconds: 16),
-              onTimeout: () {
-                debugPrint('Server delay timeout for ${config.remark}');
-                throw Exception('Server delay timeout');
-              },
-            );
-
-        // Validate delay value
-        if (delay >= -1 && delay < 10000) {
-          // Cache the result by both host and config ID
-          _pingCache[hostKey] = delay;
-          _pingCache[configId] = delay;
+        // Log the ping result for debugging
+        if (pingResult.success) {
+          debugPrint(
+            'Native ping for ${config.remark}: ${delay}ms (${pingResult.method})',
+          );
         } else {
-          // Invalid delay, cache as null
-          _pingCache[hostKey] = null;
-          _pingCache[configId] = null;
+          debugPrint(
+            'Native ping failed for ${config.remark}: ${pingResult.error}',
+          );
         }
+
+        // Cache the result by both host and config ID
+        _pingCache[hostKey] = delay;
+        _pingCache[configId] = delay;
 
         _pingInProgress[hostKey] = false;
         _pingInProgress[configId] = false;
 
         return delay;
       } catch (e) {
-        // Check if this is a timeout-related error
-        if (e.toString().contains('timeout')) {
-          debugPrint('Timeout getting server delay for ${config.remark}: $e');
-        } else {
-          debugPrint('Error getting server delay for ${config.remark}: $e');
+        debugPrint('Error with native ping for ${config.remark}: $e');
+
+        // Fallback to V2Ray's built-in ping if native ping fails
+        try {
+          await initialize();
+
+          final parser = FlutterV2ray.parseFromURL(config.fullConfig);
+          final delay = await _flutterV2ray
+              .getServerDelay(config: parser.getFullConfiguration())
+              .timeout(
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  debugPrint('V2Ray ping timeout for ${config.remark}');
+                  throw Exception('V2Ray ping timeout');
+                },
+              );
+
+          // Cache the fallback result
+          if (delay >= -1 && delay < 10000) {
+            _pingCache[hostKey] = delay;
+            _pingCache[configId] = delay;
+            return delay;
+          }
+        } catch (fallbackError) {
+          debugPrint(
+            'Fallback V2Ray ping also failed for ${config.remark}: $fallbackError',
+          );
         }
+
         _pingInProgress[hostKey] = false;
         _pingInProgress[configId] = false;
         _pingCache[hostKey] = null;
@@ -637,16 +671,6 @@ class V2RayService extends ChangeNotifier {
     // _startStatusMonitoring();
   }
 
-  void _startStatusMonitoring() {
-    // Stop existing timer if any
-    _statusCheckTimer?.cancel();
-
-    // Start periodic status checking every 5 seconds (less aggressive)
-    _statusCheckTimer = Timer.periodic(Duration(seconds: 5), (timer) {
-      _checkConnectionStatus();
-    });
-  }
-
   void _stopStatusMonitoring() {
     _statusCheckTimer?.cancel();
     _statusCheckTimer = null;
@@ -662,48 +686,6 @@ class V2RayService extends ChangeNotifier {
     }
     // Check if the string contains only valid base64 characters
     return RegExp(r'^[A-Za-z0-9+/=]+$').hasMatch(str);
-  }
-
-  Future<void> _checkConnectionStatus() async {
-    if (_activeConfig == null || _statusCheckRunning) return;
-
-    // Skip monitoring for the first 10 seconds after connection to allow stabilization
-    if (_lastConnectionTime != null &&
-        DateTime.now().difference(_lastConnectionTime!).inSeconds < 10) {
-      return;
-    }
-
-    _statusCheckRunning = true;
-    try {
-      // Check if V2Ray is actually running by getting the connection state
-      final isConnected = await _flutterV2ray.getConnectedServerDelay();
-
-      // Only consider it disconnected if we get multiple consecutive failures
-      // or if the delay is clearly indicating disconnection
-      if (isConnected == null || isConnected < -1) {
-        // Changed from < 0 to < -1
-        if (_activeConfig != null) {
-          print(
-            'Detected VPN disconnection - no server response (delay: $isConnected)',
-          );
-          _activeConfig = null;
-          _lastConnectionTime = null;
-          _onDisconnected?.call();
-        }
-      }
-    } catch (e) {
-      // Only disconnect on error if we've been connected for a while
-      if (_activeConfig != null &&
-          _lastConnectionTime != null &&
-          DateTime.now().difference(_lastConnectionTime!).inSeconds > 30) {
-        print('Detected VPN disconnection - error checking status: $e');
-        _activeConfig = null;
-        _lastConnectionTime = null;
-        _onDisconnected?.call();
-      }
-    } finally {
-      _statusCheckRunning = false;
-    }
   }
 
   // Removed getConnectedServerDelay method as requested
@@ -791,18 +773,125 @@ class V2RayService extends ChangeNotifier {
     }
   }
 
-  /// Get the ping of the currently connected server
-  /// Returns null if no server is connected or if there's an error
-  Future<int?> getConnectedServerPing() async {
+  /// Get real-time ping monitoring for the currently connected server
+  /// Returns a stream of ping results that updates at the specified interval
+  Stream<PingResult>? startConnectedServerPingMonitoring({
+    Duration interval = const Duration(seconds: 5),
+  }) {
+    if (_activeConfig == null) {
+      debugPrint('No active config for ping monitoring');
+      return null;
+    }
+
     try {
-      if (_activeConfig == null) {
-        return null; // No active connection
+      return NativePingService.startContinuousPing(
+        host: _activeConfig!.address,
+        port: _activeConfig!.port,
+        interval: interval,
+      );
+    } catch (e) {
+      debugPrint('Error starting connected server ping monitoring: $e');
+      return null;
+    }
+  }
+
+  /// Get network type information
+  Future<String> getNetworkType() async {
+    try {
+      return await NativePingService.getNetworkType();
+    } catch (e) {
+      debugPrint('Error getting network type: $e');
+      return 'Unknown';
+    }
+  }
+
+  /// Test connectivity using native ping service
+  Future<Map<String, PingResult>> testConnectivity() async {
+    try {
+      return await NativePingService.testConnectivity();
+    } catch (e) {
+      debugPrint('Error testing connectivity: $e');
+      return {};
+    }
+  }
+
+  /// Get enhanced server delay with detailed ping information
+  Future<PingResult> getServerPingDetails(V2RayConfig config) async {
+    try {
+      return await NativePingService.pingHost(
+        host: config.address,
+        port: config.port,
+        timeoutMs: 8000,
+        useIcmp: true,
+        useTcp: true,
+        useCache: false,
+      );
+    } catch (e) {
+      debugPrint('Error getting server ping details for ${config.remark}: $e');
+      return PingResult.error('Failed to ping server: $e');
+    }
+  }
+
+  /// Batch ping multiple servers for server selection
+  Future<Map<String, int?>> batchPingServers(List<V2RayConfig> configs) async {
+    try {
+      final hosts = configs
+          .map((config) => (host: config.address, port: config.port))
+          .toList();
+
+      final results = await NativePingService.pingMultipleHosts(
+        hosts: hosts,
+        timeoutMs: 6000,
+        useIcmp: true,
+        useTcp: true,
+      );
+
+      final Map<String, int?> configResults = {};
+
+      for (final config in configs) {
+        final key = '${config.address}:${config.port}';
+        final pingResult = results[key];
+        final latency = pingResult?.success == true
+            ? pingResult!.latency
+            : null;
+
+        configResults[config.id] = latency;
+
+        // Also cache the result
+        _pingCache[key] = latency;
+        _pingCache[config.id] = latency;
       }
 
-      final delay = await _flutterV2ray.getConnectedServerDelay();
-      return delay;
+      return configResults;
     } catch (e) {
-      debugPrint('Error getting connected server ping: $e');
+      debugPrint('Error in batch ping servers: $e');
+      return {};
+    }
+  }
+
+  /// Get fastest server from a list of configs
+  Future<V2RayConfig?> getFastestServer(List<V2RayConfig> configs) async {
+    if (configs.isEmpty) return null;
+
+    try {
+      final pingResults = await batchPingServers(configs);
+
+      V2RayConfig? fastestConfig;
+      int? lowestLatency;
+
+      for (final config in configs) {
+        final latency = pingResults[config.id];
+        if (latency != null && latency > 0) {
+          if (lowestLatency == null || latency < lowestLatency) {
+            lowestLatency = latency;
+            fastestConfig = config;
+          }
+        }
+      }
+
+      return fastestConfig;
+    } catch (e) {
+      debugPrint('Error finding fastest server: $e');
       return null;
     }
   }
@@ -857,6 +946,8 @@ class V2RayService extends ChangeNotifier {
   void dispose() {
     _stopStatusMonitoring();
     _stopUsageMonitoring();
+    // Cleanup native ping service
+    NativePingService.cleanup();
     super.dispose();
   }
 

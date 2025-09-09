@@ -52,43 +52,40 @@ class ServerSelector extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 GestureDetector(
-                  onTap:
-                      isConnecting
-                          ? null
-                          : () {
-                            // Check if already connected to VPN
-                            if (provider.activeConfig != null) {
-                              // Show popup to inform user to disconnect first
-                              showDialog(
-                                context: context,
-                                builder:
-                                    (context) => AlertDialog(
-                                      title: const Text('Connection Active'),
-                                      content: const Text(
-                                        'Please disconnect from VPN before selecting a different server.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.pop(context),
-                                          child: const Text('OK'),
-                                        ),
-                                      ],
-                                    ),
-                              );
-                            } else {
-                              // Not connected, show server selector as full page
-                              showServerSelectionScreen(
-                                context: context,
-                                configs: configs,
-                                selectedConfig: selectedConfig,
-                                isConnecting: isConnecting,
-                                onConfigSelected: (config) async {
-                                  await provider.selectConfig(config);
-                                },
-                              );
-                            }
-                          },
+                  onTap: isConnecting
+                      ? null
+                      : () {
+                          // Check if already connected to VPN
+                          if (provider.activeConfig != null) {
+                            // Show popup to inform user to disconnect first
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Connection Active'),
+                                content: const Text(
+                                  'Please disconnect from VPN before selecting a different server.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            // Not connected, show server selector as full page
+                            showServerSelectionScreen(
+                              context: context,
+                              configs: configs,
+                              selectedConfig: selectedConfig,
+                              isConnecting: isConnecting,
+                              onConfigSelected: (config) async {
+                                await provider.selectConfig(config);
+                              },
+                            );
+                          }
+                        },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -164,39 +161,6 @@ class ServerSelector extends StatelessWidget {
       return Colors.orange;
     }
     return AppTheme.textGrey;
-  }
-}
-
-class _ServerInfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _ServerInfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: AppTheme.textGrey),
-        const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: const TextStyle(color: AppTheme.textGrey, fontSize: 14),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 14),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
   }
 }
 

@@ -39,8 +39,7 @@ class AppTheme {
       colorScheme: const ColorScheme.dark().copyWith(
         primary: primaryGreen,
         secondary: accentGreen,
-        background: primaryDark,
-        surface: secondaryDark,
+        surface: primaryDark,
         error: disconnectedRed,
       ),
       appBarTheme: AppBarTheme(
