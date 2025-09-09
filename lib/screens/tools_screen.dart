@@ -11,6 +11,7 @@ import 'vpn_settings_screen.dart';
 import 'blocked_apps_screen.dart';
 import 'per_app_tunnel_screen.dart';
 import 'backup_restore_screen.dart';
+import 'wallpaper_settings_screen.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({super.key});
@@ -157,6 +158,21 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const PerAppTunnelScreen(),
+                ),
+              );
+            },
+          ),
+          _buildToolCard(
+            context,
+            title: 'Home Wallpaper',
+            description:
+                'Set custom wallpaper for home screen background',
+            icon: Icons.wallpaper,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WallpaperSettingsScreen(),
                 ),
               );
             },

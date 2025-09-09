@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/telegram_proxy_provider.dart';
 import 'providers/v2ray_provider.dart';
+import 'services/wallpaper_service.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/privacy_welcome_screen.dart';
 import 'services/update_service.dart';
@@ -52,6 +53,7 @@ class _MyAppState extends State<MyApp> {
       providers: [
         ChangeNotifierProvider(create: (context) => V2RayProvider()),
         ChangeNotifierProvider(create: (context) => TelegramProxyProvider()),
+        ChangeNotifierProvider(create: (context) => WallpaperService()..initialize()),
       ],
       child: MaterialApp(
         title: 'Proxy Cloud',
