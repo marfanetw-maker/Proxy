@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/services/ping_service.dart';
-import 'package:flutter_application_1/services/v2ray_service.dart';
+import 'package:proxycloud/services/ping_service.dart';
+import 'package:proxycloud/services/v2ray_service.dart';
 
 class PingTestScreen extends StatefulWidget {
   const PingTestScreen({Key? key}) : super(key: key);

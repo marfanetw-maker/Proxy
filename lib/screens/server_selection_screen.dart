@@ -3,11 +3,11 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_application_1/models/v2ray_config.dart';
-import 'package:flutter_application_1/models/subscription.dart';
-import 'package:flutter_application_1/providers/v2ray_provider.dart';
-import 'package:flutter_application_1/services/v2ray_service.dart';
-import 'package:flutter_application_1/theme/app_theme.dart';
+import 'package:proxycloud/models/v2ray_config.dart';
+import 'package:proxycloud/models/subscription.dart';
+import 'package:proxycloud/providers/v2ray_provider.dart';
+import 'package:proxycloud/services/v2ray_service.dart';
+import 'package:proxycloud/theme/app_theme.dart';
 
 class ServerSelectionScreen extends StatefulWidget {
   final List<V2RayConfig> configs;

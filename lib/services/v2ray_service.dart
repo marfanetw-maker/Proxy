@@ -4,11 +4,11 @@ import 'dart:math';
 import 'package:flutter_v2ray/flutter_v2ray.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/models/v2ray_config.dart';
-import 'package:flutter_application_1/models/subscription.dart';
+import 'package:proxycloud/models/v2ray_config.dart';
+import 'package:proxycloud/models/subscription.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_application_1/services/ping_service.dart';
+import 'package:proxycloud/services/ping_service.dart';
 
 class IpInfo {
   final String ip;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_application_1/models/app_update.dart';
+import 'package:proxycloud/models/app_update.dart';
 
 class UpdateService {
   static const String updateUrl =
@@ -29,32 +29,31 @@ class UpdateService {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Update Available'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('New version: ${update.version}'),
-                const SizedBox(height: 8),
-                Text(update.messText),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Later'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _launchUrl(update.url.trim());
-                },
-                child: const Text('Download'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Update Available'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('New version: ${update.version}'),
+            const SizedBox(height: 8),
+            Text(update.messText),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Later'),
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _launchUrl(update.url.trim());
+            },
+            child: const Text('Download'),
+          ),
+        ],
+      ),
     );
   }
 

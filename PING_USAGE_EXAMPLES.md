@@ -17,7 +17,7 @@ The native ping service provides:
 ### 1. Single Host Ping
 
 ```dart
-import 'package:flutter_application_1/services/ping_service.dart';
+import 'package:proxycloud/services/ping_service.dart';
 
 // Basic ping
 final result = await NativePingService.pingHost(
@@ -38,7 +38,7 @@ if (result.success) {
 ### 2. Using V2RayService Integration
 
 ```dart
-import 'package:flutter_application_1/services/v2ray_service.dart';
+import 'package:proxycloud/services/v2ray_service.dart';
 
 final v2rayService = V2RayService();
 
