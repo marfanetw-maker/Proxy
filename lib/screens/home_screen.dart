@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/v2ray_provider.dart';
 import '../widgets/connection_button.dart';
@@ -39,6 +40,102 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _urlController.dispose();
     super.dispose();
+  }
+
+  // Share V2Ray link to clipboard
+  void _shareV2RayLink(BuildContext context) async {
+    try {
+      final provider = Provider.of<V2RayProvider>(context, listen: false);
+      final activeConfig = provider.activeConfig;
+      
+      if (activeConfig != null && activeConfig.fullConfig.isNotEmpty) {
+        await Clipboard.setData(ClipboardData(text: activeConfig.fullConfig));
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle,
+                  color: AppTheme.primaryGreen,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'V2Ray link copied to clipboard',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppTheme.cardDark,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'No V2Ray configuration available to share',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Error copying to clipboard: ${e.toString()}',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -230,6 +327,19 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppTheme.primaryGreen,
             ),
             overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        InkWell(
+          onTap: () => _shareV2RayLink(context),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Icon(
+              Icons.share,
+              size: 18,
+              color: AppTheme.primaryGreen,
+            ),
           ),
         ),
       ],
