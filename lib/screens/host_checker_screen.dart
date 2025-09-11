@@ -15,6 +15,7 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   Map<String, dynamic>? _result;
+  int _timeoutSeconds = 10; // Default timeout in seconds
 
   // List of default URLs for quick selection
   final List<String> _defaultUrls = [
@@ -22,12 +23,32 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
     'https://www.youtube.com',
     'https://firebase.google.com',
     'https://x.com',
-    'https://chat.openai.com',
+    'https://chatgpt.com',
     'https://gemini.google.com',
     'https://www.tiktok.com',
     'https://www.instagram.com',
     'https://www.facebook.com',
     'https://telegram.org',
+    'https://www.github.com',
+    'https://www.stackoverflow.com',
+    'https://www.reddit.com',
+    'https://www.wikipedia.org',
+    'https://www.amazon.com',
+    'https://www.netflix.com',
+    'https://www.spotify.com',
+    'https://www.discord.com',
+    'https://www.whatsapp.com',
+    'https://www.linkedin.com',
+    'https://www.microsoft.com',
+    'https://www.apple.com',
+    'https://www.cloudflare.com',
+    'https://1.1.1.1',
+    'https://8.8.8.8',
+    'https://www.bing.com',
+    'https://www.yahoo.com',
+    'https://www.duckduckgo.com',
+    'https://www.twitch.tv',
+    'https://www.paypal.com',
   ];
 
   // Map of URL display names
@@ -36,12 +57,32 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
     'https://www.youtube.com': 'YouTube',
     'https://firebase.google.com': 'Firebase',
     'https://x.com': 'X (Twitter)',
-    'https://chat.openai.com': 'ChatGPT',
+    'https://chatgpt.com': 'ChatGPT',
     'https://gemini.google.com': 'Gemini',
     'https://www.tiktok.com': 'TikTok',
     'https://www.instagram.com': 'Instagram',
     'https://www.facebook.com': 'Facebook',
     'https://telegram.org': 'Telegram',
+    'https://www.github.com': 'GitHub',
+    'https://www.stackoverflow.com': 'Stack Overflow',
+    'https://www.reddit.com': 'Reddit',
+    'https://www.wikipedia.org': 'Wikipedia',
+    'https://www.amazon.com': 'Amazon',
+    'https://www.netflix.com': 'Netflix',
+    'https://www.spotify.com': 'Spotify',
+    'https://www.discord.com': 'Discord',
+    'https://www.whatsapp.com': 'WhatsApp',
+    'https://www.linkedin.com': 'LinkedIn',
+    'https://www.microsoft.com': 'Microsoft',
+    'https://www.apple.com': 'Apple',
+    'https://www.cloudflare.com': 'Cloudflare',
+    'https://1.1.1.1': 'Cloudflare DNS',
+    'https://8.8.8.8': 'Google DNS',
+    'https://www.bing.com': 'Bing',
+    'https://www.yahoo.com': 'Yahoo',
+    'https://www.duckduckgo.com': 'DuckDuckGo',
+    'https://www.twitch.tv': 'Twitch',
+    'https://www.paypal.com': 'PayPal',
   };
 
   @override
@@ -80,9 +121,9 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
       final response = await http
           .get(Uri.parse(url))
           .timeout(
-            const Duration(seconds: 10),
+            Duration(seconds: _timeoutSeconds),
             onTimeout: () {
-              throw Exception('Request timed out after 10 seconds');
+              throw Exception('Request timed out after $_timeoutSeconds seconds');
             },
           );
 
@@ -97,6 +138,7 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
           'isSuccess': response.statusCode >= 200 && response.statusCode < 300,
           'headers': response.headers,
           'contentLength': response.contentLength,
+          'timeoutUsed': _timeoutSeconds,
         };
       });
     } catch (e) {
@@ -109,6 +151,7 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
           'isSuccess': false,
           'headers': <String, String>{},
           'contentLength': 0,
+          'timeoutUsed': _timeoutSeconds,
           'errorMessage':
               'Could not connect to host. Please check your internet connection or the URL.',
         };
@@ -131,6 +174,8 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildUrlInput(),
+            const SizedBox(height: 16),
+            _buildTimeoutSettings(),
             const SizedBox(height: 24),
             _buildCheckButton(),
             const SizedBox(height: 24),
@@ -215,7 +260,7 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
           spacing: 8,
           runSpacing: 8,
           children:
-              _defaultUrls.take(5).map((url) {
+              _defaultUrls.take(8).map((url) {
                 return InkWell(
                   onTap: () {
                     setState(() {
@@ -234,6 +279,100 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
               }).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildTimeoutSettings() {
+    return Card(
+      color: AppTheme.cardDark,
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.timer,
+                  color: AppTheme.primaryGreen,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Timeout Settings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Timeout: $_timeoutSeconds seconds',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                SizedBox(
+                  width: 120,
+                  child: DropdownButtonFormField<int>(
+                    value: _timeoutSeconds,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: AppTheme.primaryGreen),
+                      ),
+                    ),
+                    dropdownColor: AppTheme.cardDark,
+                    style: const TextStyle(color: Colors.white),
+                    items: [5, 10, 15, 20, 30, 45, 60]
+                        .map((seconds) => DropdownMenuItem<int>(
+                              value: seconds,
+                              child: Text(
+                                '${seconds}s',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _timeoutSeconds = value;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -421,6 +560,7 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
   Widget _buildResponseDetailsCard() {
     final int? contentLength = _result!['contentLength'] as int?;
     final bool isSuccess = _result!['isSuccess'] as bool;
+    final int timeoutUsed = _result!['timeoutUsed'] as int;
 
     return Card(
       color: AppTheme.cardDark,
@@ -441,8 +581,9 @@ class _HostCheckerScreenState extends State<HostCheckerScreen> {
             ),
             const SizedBox(height: 16),
             _buildInfoRow('URL', _urlController.text),
+            _buildInfoRow('Timeout Used', '${timeoutUsed}s'),
             if (contentLength != null && contentLength > 0)
-              _buildInfoRow('Content Length', '$contentLength bytes'),
+              _buildInfoRow('Content Length', '${(contentLength / 1024).toStringAsFixed(2)} KB'),
             if (isSuccess) ...[
               const SizedBox(height: 8),
               const Text(
