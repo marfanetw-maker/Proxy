@@ -303,7 +303,12 @@
     "deselect_all": "إلغاء تحديد الكل",
     "contact": "اتصال",
     "contact_on_telegram": "الاتصال على تيليجرام",
-    "dismiss": "رفض"
+    "dismiss": "رفض",
+    "exit": "خروج",
+    "exit_app": "الخروج من التطبيق",
+    "exit_confirm": "هل أنت متأكد أنك تريد الخروج من التطبيق؟",
+    "exit_yes": "نعم، اخرج",
+    "exit_cancel": "إلغاء"
   },
   "errors": {
     "network_error": "حدث خطأ في الشبكة",

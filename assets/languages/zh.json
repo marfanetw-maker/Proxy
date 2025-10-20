@@ -303,7 +303,12 @@
     "deselect_all": "取消全选",
     "contact": "联系",
     "contact_on_telegram": "在Telegram上联系",
-    "dismiss": "DISMISS"
+    "dismiss": "DISMISS",
+    "exit": "退出",
+    "exit_app": "退出应用程序",
+    "exit_confirm": "您确定要退出应用程序吗？",
+    "exit_yes": "是的，退出",
+    "exit_cancel": "取消"
   },
   "errors": {
     "network_error": "发生网络错误",

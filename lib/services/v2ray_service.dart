@@ -386,13 +386,13 @@ class V2RayService extends ChangeNotifier {
 
   Future<void> _tryRestoreActiveConfig() async {
     try {
-      // Check if VPN is actually running
-      final delay = await _flutterV2ray.getConnectedServerDelay();
-      final isConnected = delay >= 0;
+      // CRITICAL FIX: Check the actual connection state using the new method
+      final connectionState = await _flutterV2ray.getConnectionState();
+      final isActuallyConnected = connectionState == "V2RAY_CONNECTED";
+      
+      print('VPN connection state check: state=$connectionState, isConnected=$isActuallyConnected');
 
-      print('VPN connection check: isConnected=$isConnected, delay=$delay');
-
-      if (isConnected) {
+      if (isActuallyConnected) {
         // Try to load the saved active config
         final savedConfig = await _loadActiveConfig();
         if (savedConfig != null) {
@@ -883,8 +883,11 @@ class V2RayService extends ChangeNotifier {
     // Public method to force check connection status
     Future<bool> isActuallyConnected() async {
       try {
-        final delay = await _flutterV2ray.getConnectedServerDelay();
-        final isConnected = delay != null && delay >= 0;
+        // CRITICAL FIX: Use the new getConnectionState method for more accurate detection
+        final connectionState = await _flutterV2ray.getConnectionState();
+        final isConnected = connectionState == "V2RAY_CONNECTED";
+        
+        print('VPN connection state check result: state=$connectionState, isConnected=$isConnected');
 
         // Don't automatically clear the active config or call onDisconnected
         // This prevents false disconnections when switching between apps
@@ -895,8 +898,8 @@ class V2RayService extends ChangeNotifier {
         print('Error in force connection check: $e');
         // Don't automatically clear the active config or call onDisconnected
         // Just report the error but maintain the connection state
-        return _activeConfig !=
-            null; // Assume still connected if we have an active config
+        // Return the current active config state as fallback
+        return _activeConfig != null;
       }
     }
 

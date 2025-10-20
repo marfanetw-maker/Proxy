@@ -20,6 +20,23 @@ class ConnectionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<V2RayProvider>(
       builder: (context, provider, _) {
+        // Show loading state while initializing
+        if (provider.isInitializing) {
+          return Container(
+            width: 160,
+            height: 160,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppTheme.cardDark,
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
+              ),
+            ),
+          );
+        }
+
         final isConnected = provider.activeConfig != null;
         final isConnecting = provider.isConnecting;
         final selectedConfig = provider.selectedConfig;

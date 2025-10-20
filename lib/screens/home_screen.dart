@@ -333,6 +333,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: Consumer<V2RayProvider>(
                       builder: (context, provider, _) {
+                        // Show loading indicator while initializing
+                        if (provider.isInitializing) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.primaryBlue,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  context.tr('common.loading'),
+                                  style: const TextStyle(
+                                    color: AppTheme.textGrey,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
                         return SingleChildScrollView(
                           physics: const BouncingScrollPhysics(),
                           child: Padding(

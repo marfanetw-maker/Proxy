@@ -303,7 +303,12 @@
     "deselect_all": "Отменить выбор",
     "contact": "Контакт",
     "contact_on_telegram": "Связаться в Telegram",
-    "dismiss": "ОТКЛОНИТЬ"
+    "dismiss": "ОТКЛОНИТЬ",
+    "exit": "Выход",
+    "exit_app": "Выйти из приложения",
+    "exit_confirm": "Вы уверены, что хотите выйти из приложения?",
+    "exit_yes": "Да, выйти",
+    "exit_cancel": "Отмена"
   },
   "errors": {
     "network_error": "Произошла сетевая ошибка",

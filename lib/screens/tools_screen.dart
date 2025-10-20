@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../services/update_service.dart';
@@ -53,6 +54,31 @@ class _ToolsScreenState extends State<ToolsScreen> {
         );
       }
     }
+  }
+
+  void _showExitConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(context.tr('common.exit')),
+          content: Text(context.tr('common.exit_confirm')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(context.tr('common.exit_cancel')),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                SystemNavigator.pop();
+              },
+              child: Text(context.tr('common.exit_yes')),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -243,6 +269,14 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     );
                   },
                 ),
+                _buildToolCard(
+                  context,
+                  title: context.tr('common.exit'),
+                  description: context.tr('common.exit_app'),
+                  icon: Icons.exit_to_app,
+                  onTap: _showExitConfirmation,
+                  isExitButton: true,
+                ),
                 // Add more tools here in the future
               ],
             ),
@@ -258,12 +292,26 @@ class _ToolsScreenState extends State<ToolsScreen> {
     required String description,
     required IconData icon,
     required VoidCallback onTap,
+    bool isExitButton = false,
   }) {
+    final iconColor = isExitButton ? Colors.red : AppTheme.primaryBlue;
+    final backgroundColor = isExitButton
+        ? Colors.red.withValues(alpha: 0.1)
+        : AppTheme.primaryBlue.withValues(alpha: 0.1);
+    final borderColor =
+        isExitButton ? Colors.red.withValues(alpha: 0.3) : Colors.transparent;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       color: AppTheme.cardDark,
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: borderColor,
+          width: isExitButton ? 1 : 0,
+        ),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -274,10 +322,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                  color: backgroundColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: AppTheme.primaryBlue, size: 28),
+                child: Icon(icon, color: iconColor, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -286,23 +334,26 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: isExitButton ? Colors.red : Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isExitButton ? Colors.redAccent : Colors.grey[400],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios,
-                color: AppTheme.primaryBlue,
+                color: iconColor,
                 size: 16,
               ),
             ],

@@ -303,7 +303,12 @@
         "deselect_all": "Deselect All",
         "contact": "Contact",
         "contact_on_telegram": "Contact on Telegram",
-        "dismiss": "DISMISS"
+        "dismiss": "DISMISS",
+        "exit": "Exit",
+        "exit_app": "Exit the application",
+        "exit_confirm": "Are you sure you want to exit the application?",
+        "exit_yes": "Yes, Exit",
+        "exit_cancel": "Cancel"
     },
     "errors": {
         "network_error": "Network error occurred",

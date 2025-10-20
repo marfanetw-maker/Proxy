@@ -98,4 +98,13 @@ abstract class FlutterV2rayPlatform extends PlatformInterface {
       'getCoreVersion() has not been implemented.',
     );
   }
+  
+  /// Gets the current connection state of the V2Ray service.
+  /// Returns a [Future] that completes with a [String] representing the connection state.
+  /// Possible values: "V2RAY_CONNECTED", "V2RAY_DISCONNECTED", "V2RAY_CONNECTING"
+  Future<String> getConnectionState() async {
+    throw UnimplementedError(
+      'getConnectionState() has not been implemented.',
+    );
+  }
 }

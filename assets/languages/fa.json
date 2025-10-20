@@ -303,7 +303,12 @@
         "deselect_all": "لغو انتخاب همه",
         "contact": "تماس",
         "contact_on_telegram": "تماس در تلگرام",
-        "dismiss": "رد کردن"
+        "dismiss": "رد کردن",
+        "exit": "خروج",
+        "exit_app": "خروج از برنامه",
+        "exit_confirm": "آیا مطمئن هستید که می‌خواهید از برنامه خارج شوید؟",
+        "exit_yes": "بله، خارج شو",
+        "exit_cancel": "لغو"
     },
     "errors": {
         "network_error": "خطای شبکه رخ داد",

@@ -18,6 +18,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   String _errorMessage = '';
   bool _isLoadingServers = false;
   bool _isProxyMode = false;
+  bool _isInitializing = true; // New flag to track initialization state
   
   // Method channel for VPN control
   static const platform = MethodChannel('com.cloud.pira/vpn_control');
@@ -29,6 +30,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   bool get isConnecting => _isConnecting;
   bool get isLoading => _isLoading;
   bool get isLoadingServers => _isLoadingServers;
+  bool get isInitializing => _isInitializing; // New getter
   String get errorMessage => _errorMessage;
   V2RayService get v2rayService => _v2rayService;
   bool get isProxyMode => _isProxyMode;
@@ -81,6 +83,9 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> _initialize() async {
     _setLoading(true);
+    _isInitializing = true; // Set initialization flag
+    notifyListeners();
+    
     try {
       await _v2rayService.initialize();
 
@@ -98,82 +103,133 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       // Update all subscriptions on app start
       await updateAllSubscriptions();
 
-      // Fetch the current notification status to sync with the app
-      await fetchNotificationStatus();
+      // CRITICAL FIX: Enhanced synchronization with actual VPN service state
+      await _enhancedSyncWithVpnServiceState();
 
-      // If we have an active config and it's in the saved list, ensure its status is correct
-      final activeConfig = _v2rayService.activeConfig;
-      if (activeConfig != null) {
-        print('Active config found: ${activeConfig.remark}');
-        bool configFound = false;
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to initialize: $e');
+    } finally {
+      _setLoading(false);
+      _isInitializing = false; // Clear initialization flag
+      notifyListeners();
+    }
+  }
 
-        for (var config in _configs) {
-          if (config.fullConfig == activeConfig.fullConfig) {
-            config.isConnected = true;
-            _selectedConfig = config;
-            configFound = true;
-            print('Found exact matching config: ${config.remark}');
-            break;
-          }
-        }
+  // CRITICAL FIX: Enhanced method to synchronize with actual VPN service state
+  Future<void> _enhancedSyncWithVpnServiceState() async {
+    try {
+      print('Enhanced synchronization with VPN service state...');
+      
+      // First, check if VPN is actually running using the improved method
+      final isActuallyConnected = await _v2rayService.isActuallyConnected();
+      print('VPN service status - Actually connected (primary check): $isActuallyConnected');
+      
+      // Reset all connection states first
+      for (int i = 0; i < _configs.length; i++) {
+        _configs[i].isConnected = false;
+      }
+      
+      if (isActuallyConnected) {
+        print('VPN is actually running, synchronizing config states...');
+        
+        // Try to get the active config from service
+        final activeConfigFromService = _v2rayService.activeConfig;
+        print('Active config from service: ${activeConfigFromService?.remark}');
+        
+        if (activeConfigFromService != null) {
+          bool configFound = false;
 
-        // If we couldn't find the exact active config in our list,
-        // try to find a matching one by address and port
-        if (!configFound) {
+          // Try to find exact matching config
           for (var config in _configs) {
-            if (config.address == activeConfig.address &&
-                config.port == activeConfig.port) {
+            if (config.fullConfig == activeConfigFromService.fullConfig) {
               config.isConnected = true;
               _selectedConfig = config;
               configFound = true;
-              print('Found matching config by address/port: ${config.remark}');
-              break;
-            }
-          }
-        }
-
-        if (!configFound) {
-          print('No matching config found in list for active VPN connection');
-          // The active config is not in our current list
-          // This could happen if subscriptions were updated while VPN was connected
-          // Add the active config to our list temporarily
-          _configs.add(activeConfig);
-          activeConfig.isConnected = true;
-          _selectedConfig = activeConfig;
-          print('Added active config to list: ${activeConfig.remark}');
-        }
-
-        notifyListeners();
-      } else {
-        // If no active config, try to load the last selected config
-        final selectedConfig = await _v2rayService.loadSelectedConfig();
-        if (selectedConfig != null) {
-          // Find the matching config in our list
-          for (var config in _configs) {
-            if (config.fullConfig == selectedConfig.fullConfig) {
-              _selectedConfig = config;
+              print('Found exact matching config: ${config.remark}');
               break;
             }
           }
 
-          // If we couldn't find the exact config, try to match by address and port
-          if (_selectedConfig == null) {
+          // If we couldn't find the exact active config in our list,
+          // try to find a matching one by address and port
+          if (!configFound) {
             for (var config in _configs) {
-              if (config.address == selectedConfig.address &&
-                  config.port == selectedConfig.port) {
+              if (config.address == activeConfigFromService.address &&
+                  config.port == activeConfigFromService.port) {
+                config.isConnected = true;
                 _selectedConfig = config;
+                configFound = true;
+                print('Found matching config by address/port: ${config.remark}');
                 break;
               }
             }
           }
 
-          notifyListeners();
+          // If still no matching config found, add the active config temporarily
+          if (!configFound) {
+            print('No matching config found in list for active VPN connection');
+            // Add the active config to our list temporarily
+            _configs.add(activeConfigFromService);
+            activeConfigFromService.isConnected = true;
+            _selectedConfig = activeConfigFromService;
+            print('Added active config to list: ${activeConfigFromService.remark}');
+          }
+        } else {
+          // VPN is running but we don't have the config details
+          // Try to find any config that might be connected
+          print('VPN is running but no active config in service, checking configs...');
+          V2RayConfig? foundConnectedConfig;
+          
+          // Check if any config has connection details that match a running service
+          for (var config in _configs) {
+            try {
+              final parser = V2ray.parseFromURL(config.fullConfig);
+              // We can't directly ping without the service, so we'll mark the first one as connected
+              config.isConnected = true;
+              _selectedConfig = config;
+              foundConnectedConfig = config;
+              print('Marked config as connected by default: ${config.remark}');
+              break;
+            } catch (e) {
+              print('Error checking config ${config.remark}: $e');
+            }
+          }
+          
+          if (foundConnectedConfig == null) {
+            print('Could not identify which config is connected, marking first available');
+            // As a fallback, mark the first config as connected if we have configs
+            if (_configs.isNotEmpty) {
+              _configs.first.isConnected = true;
+              _selectedConfig = _configs.first;
+              print('Marked first config as connected: ${_configs.first.remark}');
+            }
+          }
+        }
+      } else {
+        print('VPN is not actually connected, clearing connection states');
+        // VPN is not running, ensure all configs show disconnected
+        for (var config in _configs) {
+          config.isConnected = false;
+        }
+        _selectedConfig = null;
+        
+        // Clear active config from service if it exists
+        if (_v2rayService.activeConfig != null) {
+          await _v2rayService.disconnect();
         }
       }
+
+      // Save the synchronized state
+      await _v2rayService.saveConfigs(_configs);
+      print('VPN service state synchronization completed');
     } catch (e) {
-      _setError('Failed to initialize: $e');
-    } finally {
-      _setLoading(false);
+      print('Error in enhanced synchronization with VPN service state: $e');
+      // On error, ensure clean state
+      for (var config in _configs) {
+        config.isConnected = false;
+      }
+      _selectedConfig = null;
     }
   }
 
@@ -844,9 +900,11 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       // When app is resumed, check connection status after a delay
       // This allows the VPN connection time to stabilize
-      Future.delayed(const Duration(milliseconds: 1000), () {
+      Future.delayed(const Duration(milliseconds: 500), () async {
         print('App resumed, checking VPN status...');
-        fetchNotificationStatus();
+        // CRITICAL FIX: Enhanced synchronization with actual VPN service state when app resumes
+        await _enhancedSyncWithVpnServiceState();
+        notifyListeners();
       });
     } else if (state == AppLifecycleState.paused) {
       // App is paused, VPN status will be maintained in background

@@ -214,6 +214,11 @@ class TranslationKeys {
   static const String commonContactOnTelegram = 'common.contact_on_telegram';
   static const String commonDismiss = 'common.dismiss';
   static const String commonLoadingApps = 'common.loading_apps';
+  static const String commonExit = 'common.exit';
+  static const String commonExitApp = 'common.exit_app';
+  static const String commonExitConfirm = 'common.exit_confirm';
+  static const String commonExitYes = 'common.exit_yes';
+  static const String commonExitCancel = 'common.exit_cancel';
 
   // Server Selector
   static const String serverSelectorConnectionActive =
