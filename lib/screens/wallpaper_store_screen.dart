@@ -129,40 +129,16 @@ class _WallpaperStoreScreenState extends State<WallpaperStoreScreen> {
 
   Future<void> _setAsWallpaper(String url) async {
     try {
-      final response = await http.get(Uri.parse(url));
+      // Set as wallpaper using the wallpaper service
+      final wallpaperService = Provider.of<WallpaperService>(
+        context,
+        listen: false,
+      );
 
-      if (response.statusCode == 200) {
-        // Get app documents directory
-        final Directory appDir = await getApplicationDocumentsDirectory();
-        final String wallpapersDir = '${appDir.path}/wallpapers';
+      // Use the existing method to set wallpaper from URL
+      final success = await wallpaperService.setWallpaperFromUrl(url);
 
-        // Create wallpapers directory if it doesn't exist
-        final Directory wallpaperDirectory = Directory(wallpapersDir);
-        if (!await wallpaperDirectory.exists()) {
-          await wallpaperDirectory.create(recursive: true);
-        }
-
-        // Generate filename from URL
-        final String fileName = url.split('/').last;
-        final String savePath = '$wallpapersDir/$fileName';
-
-        // Save the image
-        final File file = File(savePath);
-        await file.writeAsBytes(response.bodyBytes);
-
-        // Set as wallpaper using the wallpaper service
-        final wallpaperService = Provider.of<WallpaperService>(
-          context,
-          listen: false,
-        );
-
-        // Use the new method to set wallpaper from URL
-        final success = await wallpaperService.setWallpaperFromUrl(url);
-
-        if (!success) {
-          throw Exception('Failed to set wallpaper from URL');
-        }
-
+      if (success) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -172,11 +148,11 @@ class _WallpaperStoreScreenState extends State<WallpaperStoreScreen> {
         );
 
         // Go back to the previous screen
-        Navigator.of(context).pop();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       } else {
-        throw Exception(
-          'Failed to download image: HTTP ${response.statusCode}',
-        );
+        throw Exception('Failed to set wallpaper from URL');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -438,15 +414,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
           IconButton(
             icon: const Icon(Icons.wallpaper, color: Colors.white),
             onPressed: () {
-              // TODO: Implement set as wallpaper functionality for fullscreen view
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Set as wallpaper functionality can be added here',
-                  ),
-                  backgroundColor: Colors.blue,
-                ),
-              );
+              _setAsWallpaper(widget.imageUrl);
             },
           ),
         ],
@@ -508,6 +476,73 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
           backgroundColor: Colors.red,
         ),
       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.tr(
+              TranslationKeys.wallpaperStoreDownloadError,
+              parameters: {'error': e.toString()},
+            ),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _setAsWallpaper(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        // Get app documents directory
+        final Directory appDir = await getApplicationDocumentsDirectory();
+        final String wallpapersDir = '${appDir.path}/wallpapers';
+
+        // Create wallpapers directory if it doesn't exist
+        final Directory wallpaperDirectory = Directory(wallpapersDir);
+        if (!await wallpaperDirectory.exists()) {
+          await wallpaperDirectory.create(recursive: true);
+        }
+
+        // Generate filename from URL
+        final String fileName = url.split('/').last;
+        final String savePath = '$wallpapersDir/$fileName';
+
+        // Save the image
+        final File file = File(savePath);
+        await file.writeAsBytes(response.bodyBytes);
+
+        // Set as wallpaper using the wallpaper service
+        final wallpaperService = Provider.of<WallpaperService>(
+          context,
+          listen: false,
+        );
+
+        // Set the wallpaper using the existing method
+        final success = await wallpaperService.setWallpaperFromUrl(url);
+        if (!success) {
+          throw Exception('Failed to set wallpaper from URL');
+        }
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr(TranslationKeys.wallpaperStoreSetSuccess)),
+            backgroundColor: AppTheme.primaryBlue,
+          ),
+        );
+
+        // Go back to the previous screen
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } else {
+        throw Exception(
+          'Failed to download image: HTTP ${response.statusCode}',
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
