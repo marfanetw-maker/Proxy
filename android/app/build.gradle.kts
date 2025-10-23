@@ -73,6 +73,15 @@ android {
                 debugSymbolLevel = "FULL"
             }
         }
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            ndk {
+                abiFilters.addAll(listOf("x86_64", "armeabi-v7a", "arm64-v8a"))
+                debugSymbolLevel = "FULL"
+            }
+        }
     }
 }
 

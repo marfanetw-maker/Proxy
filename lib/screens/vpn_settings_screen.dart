@@ -5,6 +5,9 @@ import '../theme/app_theme.dart';
 import '../widgets/error_snackbar.dart';
 import '../utils/app_localizations.dart'; // Added import for translations
 
+// Constants for shared preferences keys
+const String _pingBatchSizeKey = 'ping_batch_size';
+
 class VpnSettingsScreen extends StatefulWidget {
   const VpnSettingsScreen({Key? key}) : super(key: key);
 
@@ -15,6 +18,7 @@ class VpnSettingsScreen extends StatefulWidget {
 class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
   final TextEditingController bypassSubnetController = TextEditingController();
   final TextEditingController dnsServerController = TextEditingController();
+  final TextEditingController pingBatchSizeController = TextEditingController();
   bool isEnabled = false;
   bool isLoading = true;
   bool isDnsEnabled = false; // For custom DNS settings
@@ -29,6 +33,7 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
   void dispose() {
     bypassSubnetController.dispose();
     dnsServerController.dispose();
+    pingBatchSizeController.dispose();
     super.dispose();
   }
 
@@ -45,6 +50,7 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
       final bool savedDnsEnabled = prefs.getBool('custom_dns_enabled') ?? false;
       final String savedDnsServers =
           prefs.getString('custom_dns_servers') ?? '1.1.1.1\n1.0.0.1\n8.8.8.8\n8.8.4.4';
+      final int savedPingBatchSize = prefs.getInt(_pingBatchSizeKey) ?? 5; // Default to 5
 
       // Set proxy mode to false (VPN mode only) in SharedPreferences
       await prefs.setBool('proxy_mode_enabled', false);
@@ -67,6 +73,7 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
       setState(() {
         bypassSubnetController.text = savedSubnets;
         dnsServerController.text = savedDnsServers;
+        pingBatchSizeController.text = savedPingBatchSize.toString();
         isEnabled = savedEnabled;
         isDnsEnabled = savedDnsEnabled;
         isLoading = false;
@@ -104,6 +111,18 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
         'custom_dns_servers',
         dnsServerController.text.trim(),
       );
+      
+      // Save ping batch size (ensure it's between 1 and 10)
+      int pingBatchSize = 5; // Default value
+      try {
+        pingBatchSize = int.parse(pingBatchSizeController.text.trim());
+        if (pingBatchSize < 1) pingBatchSize = 1;
+        if (pingBatchSize > 10) pingBatchSize = 10;
+      } catch (e) {
+        // If parsing fails, use default value
+        pingBatchSize = 5;
+      }
+      await prefs.setInt(_pingBatchSizeKey, pingBatchSize);
 
       setState(() {
         isLoading = false;
@@ -416,6 +435,85 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                               fontStyle: FontStyle.italic,
                               color: Colors.orangeAccent,
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    color: AppTheme.secondaryDark,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            context.tr(TranslationKeys.vpnSettingsPingBatchSize),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            context.tr(
+                              TranslationKeys.vpnSettingsPingBatchSizeDesc,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: pingBatchSizeController,
+                            decoration: InputDecoration(
+                              hintText: context.tr(
+                                'vpn_settings.ping_batch_size_hint',
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                  color: AppTheme.primaryGreen,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: AppTheme.cardDark,
+                            ),
+                            style: const TextStyle(fontSize: 14),
+                            keyboardType: TextInputType.number,
+                            maxLength: 2,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    pingBatchSizeController.text = '5';
+                                  });
+                                },
+                                child: Text(
+                                  context.tr(
+                                    TranslationKeys.vpnSettingsResetDefault,
+                                  ),
+                                  style: const TextStyle(
+                                    color: AppTheme.primaryGreen,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

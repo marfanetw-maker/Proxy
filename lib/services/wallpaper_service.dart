@@ -8,18 +8,22 @@ import 'package:http/http.dart' as http;
 class WallpaperService extends ChangeNotifier {
   static const String _wallpaperPathKey = 'home_wallpaper_path';
   static const String _wallpaperEnabledKey = 'home_wallpaper_enabled';
+  static const String _glassBackgroundKey = 'glass_background_enabled';
 
   String? _wallpaperPath;
   bool _isWallpaperEnabled = false;
+  bool _isGlassBackgroundEnabled = false;
 
   String? get wallpaperPath => _wallpaperPath;
   bool get isWallpaperEnabled => _isWallpaperEnabled;
+  bool get isGlassBackgroundEnabled => _isGlassBackgroundEnabled;
 
   /// Initialize the service by loading saved wallpaper settings
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _wallpaperPath = prefs.getString(_wallpaperPathKey);
     _isWallpaperEnabled = prefs.getBool(_wallpaperEnabledKey) ?? false;
+    _isGlassBackgroundEnabled = prefs.getBool(_glassBackgroundKey) ?? false;
 
     // Check if the saved wallpaper file still exists
     if (_wallpaperPath != null && _isWallpaperEnabled) {
@@ -110,6 +114,14 @@ class WallpaperService extends ChangeNotifier {
     }
 
     await prefs.setBool(_wallpaperEnabledKey, enabled);
+    notifyListeners();
+  }
+
+  /// Set glass background setting
+  Future<void> setGlassBackground(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    _isGlassBackgroundEnabled = enabled;
+    await prefs.setBool(_glassBackgroundKey, enabled);
     notifyListeners();
   }
 

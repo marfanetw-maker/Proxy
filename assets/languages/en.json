@@ -308,7 +308,8 @@
         "exit_app": "Exit the application",
         "exit_confirm": "Are you sure you want to exit the application?",
         "exit_yes": "Yes, Exit",
-        "exit_cancel": "Cancel"
+        "exit_cancel": "Cancel",
+        "unknown": "Unknown"
     },
     "errors": {
         "network_error": "Network error occurred",
@@ -419,7 +420,9 @@
         "default_background": "Default Gradient Background",
         "info": "• Images will be optimized and saved locally\n• Supports JPG, PNG formats\n• Wallpaper applies to home screen only",
         "visit_store": "Visit Wallpaper Store",
-        "store_button": "Wallpaper Store"
+        "store_button": "Wallpaper Store",
+        "glass_background": "Glass Background",
+        "glass_background_desc": "Enable glass effect for cards on home screen"
     },
     "wallpaper_store": {
         "title": "Wallpaper Store",
@@ -451,7 +454,10 @@
         "about_bypass_example": "Example: 192.168.1.0/24 will bypass all traffic to your local network if your router uses that subnet.",
         "saved_success": "Settings saved successfully",
         "error_loading": "Error loading settings: {error}",
-        "error_saving": "Error saving settings: {error}"
+        "error_saving": "Error saving settings: {error}",
+        "ping_batch_size": "Ping Batch Size",
+        "ping_batch_size_desc": "Number of servers to ping simultaneously during server testing (1-10)",
+        "ping_batch_size_hint": "Enter a number between 1 and 10"
     },
     "store_screen": {
         "title": "Subscription Store",

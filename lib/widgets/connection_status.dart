@@ -3,17 +3,19 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
+import '../services/wallpaper_service.dart';
 
 class ConnectionStatus extends StatelessWidget {
   const ConnectionStatus({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<V2RayProvider>(
-      builder: (context, provider, _) {
+    return Consumer2<V2RayProvider, WallpaperService>(
+      builder: (context, provider, wallpaperService, _) {
         final activeConfig = provider.activeConfig;
         final isConnecting = provider.isConnecting;
         final errorMessage = provider.errorMessage;
+        final isGlassBackground = wallpaperService.isGlassBackgroundEnabled;
 
         return Container(
           width: double.infinity,
@@ -85,7 +87,9 @@ class ConnectionStatus extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
+                    color: isGlassBackground
+                        ? Colors.black.withOpacity(0.2)
+                        : Colors.black.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(

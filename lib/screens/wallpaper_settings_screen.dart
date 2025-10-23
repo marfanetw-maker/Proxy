@@ -136,6 +136,14 @@ class _WallpaperSettingsScreenState extends State<WallpaperSettingsScreen> {
     }
   }
 
+  Future<void> _toggleGlassBackground(bool value) async {
+    final wallpaperService = Provider.of<WallpaperService>(
+      context,
+      listen: false,
+    );
+    await wallpaperService.setGlassBackground(value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,6 +160,11 @@ class _WallpaperSettingsScreenState extends State<WallpaperSettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Glass background toggle
+                _buildGlassBackgroundToggle(wallpaperService),
+
+                const SizedBox(height: 16),
+
                 // Current wallpaper preview
                 if (wallpaperService.isWallpaperEnabled &&
                     wallpaperService.wallpaperPath != null)
@@ -220,6 +233,39 @@ class _WallpaperSettingsScreenState extends State<WallpaperSettingsScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildGlassBackgroundToggle(WallpaperService wallpaperService) {
+    return Card(
+      color: AppTheme.surfaceCard,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              context.tr(TranslationKeys.wallpaperSettingsGlassBackground),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Switch(
+              value: wallpaperService.isGlassBackgroundEnabled,
+              onChanged: (value) {
+                setState(() {
+                  _toggleGlassBackground(value);
+                });
+              },
+              activeColor: AppTheme.primaryBlue,
+            ),
+          ],
+        ),
       ),
     );
   }

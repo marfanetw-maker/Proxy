@@ -772,6 +772,8 @@ class TranslationKeys {
   static const String wallpaperSettingsInfo = 'wallpaper_settings.info';
   static const String wallpaperSettingsVisitStore = 'wallpaper_settings.visit_store';
   static const String wallpaperSettingsStoreButton = 'wallpaper_settings.store_button';
+  static const String wallpaperSettingsGlassBackground = 'wallpaper_settings.glass_background';
+  static const String wallpaperSettingsGlassBackgroundDesc = 'wallpaper_settings.glass_background_desc';
 
   // Wallpaper Store Screen
   static const String wallpaperStoreTitle = 'wallpaper_store.title';
@@ -802,6 +804,8 @@ class TranslationKeys {
       'vpn_settings.dns_reset_default';
   static const String vpnSettingsChangesEffect = 'vpn_settings.changes_effect';
   static const String vpnSettingsAboutBypass = 'vpn_settings.about_bypass';
+  static const String vpnSettingsPingBatchSize = 'vpn_settings.ping_batch_size';
+  static const String vpnSettingsPingBatchSizeDesc = 'vpn_settings.ping_batch_size_desc';
   static const String vpnSettingsAboutBypassDesc =
       'vpn_settings.about_bypass_desc';
   static const String vpnSettingsAboutBypassExample =

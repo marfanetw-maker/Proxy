@@ -308,7 +308,8 @@
     "exit_app": "Salir de la aplicación",
     "exit_confirm": "¿Está seguro de que desea salir de la aplicación?",
     "exit_yes": "Sí, Salir",
-    "exit_cancel": "Cancelar"
+    "exit_cancel": "Cancelar",
+    "unknown": "Desconocido"
   },
   "errors": {
     "network_error": "Ocurrió un error de red",
@@ -419,7 +420,9 @@
     "default_background": "Fondo de Gradiente Predeterminado",
     "info": "• Las imágenes se optimizarán y guardarán localmente\n• Soporta formatos JPG, PNG\n• El fondo de pantalla se aplica solo a la pantalla de inicio",
     "visit_store": "Visitar Tienda de Fondos",
-    "store_button": "Tienda de Fondos"
+    "store_button": "Tienda de Fondos",
+    "glass_background": "Fondo de Cristal",
+    "glass_background_desc": "Habilitar efecto de cristal para las tarjetas en la pantalla de inicio"
   },
   "wallpaper_store": {
     "title": "Tienda de Fondos",
@@ -526,7 +529,10 @@
     "about_bypass_example": "Ejemplo: 192.168.1.0/24 evitará todo el tráfico a su red local si su enrutador usa esa subred.",
     "saved_success": "Configuración guardada exitosamente",
     "error_loading": "Error al cargar configuración: {error}",
-    "error_saving": "Error al guardar configuración: {error}"
+    "error_saving": "Error al guardar configuración: {error}",
+    "ping_batch_size": "Tamaño del lote de ping",
+    "ping_batch_size_desc": "Número de servidores para hacer ping simultáneamente durante la prueba de servidores (1-10)",
+    "ping_batch_size_hint": "Ingrese un número entre 1 y 10"
   },
   "persian_gulf": {
     "title": "Golfo Pérsico",

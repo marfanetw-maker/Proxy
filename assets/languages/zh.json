@@ -308,7 +308,8 @@
     "exit_app": "退出应用程序",
     "exit_confirm": "您确定要退出应用程序吗？",
     "exit_yes": "是的，退出",
-    "exit_cancel": "取消"
+    "exit_cancel": "取消",
+    "unknown": "未知"
   },
   "errors": {
     "network_error": "发生网络错误",
@@ -419,7 +420,9 @@
     "default_background": "默认渐变背景",
     "info": "• 图片将被优化并本地保存\n• 支持JPG、PNG格式\n• 壁纸仅应用于主屏幕",
     "visit_store": "访问壁纸商店",
-    "store_button": "壁纸商店"
+    "store_button": "壁纸商店",
+    "glass_background": "玻璃背景",
+    "glass_background_desc": "为主屏幕上的卡片启用玻璃效果"
   },
   "wallpaper_store": {
     "title": "壁纸商店",
@@ -526,7 +529,10 @@
     "about_bypass_example": "例如：如果您的路由器使用该子网，192.168.1.0/24将绕过到本地网络的所有流量。",
     "saved_success": "设置保存成功",
     "error_loading": "加载设置时出错：{error}",
-    "error_saving": "保存设置时出错：{error}"
+    "error_saving": "保存设置时出错：{error}",
+    "ping_batch_size": "Ping批处理大小",
+    "ping_batch_size_desc": "服务器测试期间同时Ping的服务器数量（1-10）",
+    "ping_batch_size_hint": "输入1到10之间的数字"
   },
   "persian_gulf": {
     "title": "波斯湾",

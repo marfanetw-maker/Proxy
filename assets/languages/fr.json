@@ -308,7 +308,8 @@
     "exit_app": "Quitter l'application",
     "exit_confirm": "Êtes-vous sûr de vouloir quitter l'application ?",
     "exit_yes": "Oui, quitter",
-    "exit_cancel": "Annuler"
+    "exit_cancel": "Annuler",
+    "unknown": "Inconnu"
   },
   "errors": {
     "network_error": "Une erreur réseau s'est produite",
@@ -419,7 +420,9 @@
     "default_background": "Fond de dégradé par défaut",
     "info": "• Les images seront optimisées et enregistrées localement\n• Prend en charge les formats JPG, PNG\n• Le fond d'écran s'applique uniquement à l'écran d'accueil",
     "visit_store": "Visiter la Boutique de Fonds d'Écran",
-    "store_button": "Boutique de Fonds d'Écran"
+    "store_button": "Boutique de Fonds d'Écran",
+    "glass_background": "Arrière-plan en verre",
+    "glass_background_desc": "Activer l'effet verre pour les cartes sur l'écran d'accueil"
   },
   "wallpaper_store": {
     "title": "Boutique de Fonds d'Écran",
@@ -526,7 +529,10 @@
     "about_bypass_example": "Exemple : 192.168.1.0/24 contournera tout le trafic vers votre réseau local si votre routeur utilise ce sous-réseau.",
     "saved_success": "Paramètres enregistrés avec succès",
     "error_loading": "Erreur lors du chargement des paramètres : {error}",
-    "error_saving": "Erreur lors de l'enregistrement des paramètres : {error}"
+    "error_saving": "Erreur lors de l'enregistrement des paramètres : {error}",
+    "ping_batch_size": "Taille du lot de ping",
+    "ping_batch_size_desc": "Nombre de serveurs à pinguer simultanément pendant le test de serveur (1-10)",
+    "ping_batch_size_hint": "Entrez un nombre entre 1 et 10"
   },
   "persian_gulf": {
     "title": "Golfe Persique",

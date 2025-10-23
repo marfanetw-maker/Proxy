@@ -308,7 +308,8 @@
         "exit_app": "Uygulamadan çık",
         "exit_confirm": "Uygulamadan çıkmak istediğinizden emin misiniz?",
         "exit_yes": "Evet, Çık",
-        "exit_cancel": "İptal"
+        "exit_cancel": "İptal",
+        "unknown": "Bilinmeyen"
     },
     "errors": {
         "network_error": "Ağ hatası oluştu",
@@ -419,7 +420,9 @@
         "default_background": "Varsayılan Gradyan Arka Plan",
         "info": "• Resimler optimize edilecek ve yerel olarak kaydedilecektir\n• JPG, PNG formatlarını destekler\n• Duvar kağıdı sadece ana ekrana uygulanır",
     "visit_store": "Duvar Kağıdı Mağazasını Ziyaret Et",
-    "store_button": "Duvar Kağıdı Mağazası"
+    "store_button": "Duvar Kağıdı Mağazası",
+    "glass_background": "Cam Arka Plan",
+    "glass_background_desc": "Ana ekrandaki kartlar için cam efektini etkinleştir"
     },
     "wallpaper_store": {
         "title": "Duvar Kağıdı Mağazası",
@@ -451,7 +454,10 @@
         "about_bypass_example": "Örnek: 192.168.1.0/24, yönlendiriciniz bu alt ağı kullanıyorsa yerel ağınıza giden tüm trafiği atlayacaktır.",
         "saved_success": "Ayarlar başarıyla kaydedildi",
         "error_loading": "Ayarlar yüklenirken hata oluştu: {error}",
-        "error_saving": "Ayarlar kaydedilirken hata oluştu: {error}"
+        "error_saving": "Ayarlar kaydedilirken hata oluştu: {error}",
+        "ping_batch_size": "Ping Toplu İş Boyutu",
+        "ping_batch_size_desc": "Sunucu testi sırasında aynı anda pinglenecek sunucu sayısı (1-10)",
+        "ping_batch_size_hint": "1 ile 10 arasında bir sayı girin"
     },
     "store_screen": {
         "title": "Abonelik Mağazası",

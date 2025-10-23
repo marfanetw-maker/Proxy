@@ -9,6 +9,10 @@ import 'package:proxycloud/providers/v2ray_provider.dart';
 import 'package:proxycloud/services/v2ray_service.dart';
 import 'package:proxycloud/theme/app_theme.dart';
 import 'package:proxycloud/utils/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Constants for shared preferences keys
+const String _pingBatchSizeKey = 'ping_batch_size';
 
 class ServerSelectionScreen extends StatefulWidget {
   final List<V2RayConfig> configs;
@@ -35,6 +39,21 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   final V2RayService _v2rayService = V2RayService();
   final StreamController<String> _autoConnectStatusStream =
       StreamController<String>.broadcast();
+
+  /// Get ping batch size from shared preferences
+  Future<int> _getPingBatchSize() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final int batchSize = prefs.getInt(_pingBatchSizeKey) ?? 5; // Default to 5
+      // Ensure the value is between 1 and 10
+      if (batchSize < 1) return 1;
+      if (batchSize > 10) return 10;
+      return batchSize;
+    } catch (e) {
+      debugPrint('Error getting ping batch size: $e');
+      return 5; // Default value
+    }
+  }
 
   Future<void> _importFromClipboard() async {
     try {
@@ -289,6 +308,10 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         _loadingPings.clear();
       });
 
+      // Get the batch size from settings
+      final int batchSize = await _getPingBatchSize();
+      debugPrint('Using ping batch size: $batchSize');
+
       final provider = Provider.of<V2RayProvider>(context, listen: false);
       final subscriptions = provider.subscriptions;
       
@@ -321,11 +344,13 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             .toList();
       }
 
-      // Process configs in batches of 5
-      for (int i = 0; i < configsToPing.length; i += 5) {
+      // Process configs in batches
+      for (int i = 0; i < configsToPing.length; i += batchSize) {
         if (!mounted) break;
 
-        final endIndex = (i + 5 < configsToPing.length) ? i + 5 : configsToPing.length;
+        final endIndex = (i + batchSize < configsToPing.length)
+            ? i + batchSize
+            : configsToPing.length;
         final batch = configsToPing.sublist(i, endIndex);
 
         // Ping all configs in the batch in parallel
@@ -339,7 +364,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         await Future.wait(futures);
 
         // Small delay between batches to avoid overwhelming the system
-        if (mounted && i + 5 < configsToPing.length) {
+        if (mounted && i + batchSize < configsToPing.length) {
           await Future.delayed(const Duration(milliseconds: 100));
         }
       }
@@ -375,10 +400,15 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     if (!mounted) return;
 
     try {
+      // Get the batch size from settings
+      final int batchSizeSetting = await _getPingBatchSize();
+      // Use a smaller batch size for auto-connect (max 3) to be more responsive
+      final int batchSize = min(batchSizeSetting, 3);
+
       while (remainingConfigs.isNotEmpty && selectedConfig == null && mounted) {
-        final batchSize = min(3, remainingConfigs.length); // Reduced batch size
-        final currentBatch = remainingConfigs.take(batchSize).toList();
-        remainingConfigs.removeRange(0, batchSize);
+        final currentBatchSize = min(batchSize, remainingConfigs.length);
+        final currentBatch = remainingConfigs.take(currentBatchSize).toList();
+        remainingConfigs.removeRange(0, currentBatchSize);
 
         // Check mounted state before updating stream
         if (!mounted) break;
@@ -522,9 +552,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error in auto connect algorithm: $e');
-
-      // Safe error handling with navigation
+      debugPrint('Error in auto-connect algorithm: $e');
       if (mounted) {
         try {
           if (Navigator.of(context).canPop()) {
@@ -533,26 +561,14 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                context.tr(
-                  TranslationKeys.serverSelectionErrorUpdating,
-                  parameters: {'error': e.toString()},
-                ),
+                '${context.tr(TranslationKeys.serverSelectionErrorUpdating)}: $e',
               ),
               backgroundColor: Colors.red,
             ),
           );
         } catch (navError) {
-          debugPrint('Error with navigation/snackbar in catch: $navError');
+          debugPrint('Error with navigation/snackbar in auto-connect: $navError');
         }
-      }
-    } finally {
-      // Ensure cleanup happens even if errors occur
-      try {
-        _batchTimeoutTimer?.cancel();
-        _batchTimeoutTimer = null;
-        _cancelAllPingTasks();
-      } catch (e) {
-        debugPrint('Error during cleanup: $e');
       }
     }
   }
@@ -672,6 +688,69 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         debugPrint(
           'Error updating error state for ${config.remark}: $stateError',
         );
+      }
+    }
+  }
+
+  Future<void> _pingAllConfigs() async {
+    setState(() {
+      _isPingingAllServers = true;
+    });
+
+    try {
+      // Clear existing pings when starting new test
+      setState(() {
+        _pings.clear();
+      });
+
+      // Get the batch size from settings
+      final int batchSize = await _getPingBatchSize();
+      debugPrint('Using ping batch size: $batchSize');
+
+      // Filter configs to only include non-connected configs
+      final configsToPing = widget.configs
+          .where((config) => config.id != widget.selectedConfig?.id)
+          .toList();
+
+      // Process configs in batches
+      for (int i = 0; i < configsToPing.length; i += batchSize) {
+        if (!mounted) break;
+
+        final endIndex = (i + batchSize < configsToPing.length)
+            ? i + batchSize
+            : configsToPing.length;
+        final batch = configsToPing.sublist(i, endIndex);
+
+        // Ping all configs in the batch in parallel
+        final futures = <Future<void>>[];
+        for (final config in batch) {
+          if (!mounted) break;
+          futures.add(_loadPingForConfig(config, [config]));
+        }
+
+        // Wait for all configs in the batch to complete
+        await Future.wait(futures);
+
+        // Small delay between batches to avoid overwhelming the system
+        if (mounted && i + batchSize < configsToPing.length) {
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in ping all operation: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error testing all servers: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPingingAllServers = false;
+        });
       }
     }
   }

@@ -8,6 +8,7 @@ import '../widgets/background_gradient.dart';
 import '../widgets/error_snackbar.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_localizations.dart';
+import '../services/wallpaper_service.dart';
 
 class TelegramProxyScreen extends StatefulWidget {
   const TelegramProxyScreen({Key? key}) : super(key: key);
@@ -48,8 +49,8 @@ class _TelegramProxyScreenState extends State<TelegramProxyScreen> {
             ),
           ],
         ),
-        body: Consumer<TelegramProxyProvider>(
-          builder: (context, provider, _) {
+        body: Consumer2<TelegramProxyProvider, WallpaperService>(
+          builder: (context, provider, wallpaperService, _) {
             if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -100,7 +101,7 @@ class _TelegramProxyScreenState extends State<TelegramProxyScreen> {
               itemCount: provider.proxies.length,
               itemBuilder: (context, index) {
                 final proxy = provider.proxies[index];
-                return _buildProxyCard(context, proxy);
+                return _buildProxyCard(context, proxy, wallpaperService.isGlassBackgroundEnabled);
               },
             );
           },
@@ -109,10 +110,10 @@ class _TelegramProxyScreenState extends State<TelegramProxyScreen> {
     );
   }
 
-  Widget _buildProxyCard(BuildContext context, TelegramProxy proxy) {
+  Widget _buildProxyCard(BuildContext context, TelegramProxy proxy, bool isGlassBackground) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: AppTheme.cardDark,
+      color: isGlassBackground ? AppTheme.cardDark.withOpacity(0.7) : AppTheme.cardDark,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
