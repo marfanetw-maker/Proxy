@@ -102,7 +102,7 @@ class NativePingService {
   static Future<PingResult> pingHost({
     required String host,
     int port = 80,
-    int timeoutMs = 5000,
+    int timeoutMs = 8000,
     bool useIcmp = true,
     bool useTcp = true,
     bool useCache = true,
@@ -180,7 +180,7 @@ class NativePingService {
   /// Ping multiple hosts in parallel
   static Future<Map<String, PingResult>> pingMultipleHosts({
     required List<({String host, int port})> hosts,
-    int timeoutMs = 5000,
+    int timeoutMs = 8000,
     bool useIcmp = true,
     bool useTcp = true,
   }) async {

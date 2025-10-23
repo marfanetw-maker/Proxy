@@ -165,7 +165,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   Timer? _batchTimeoutTimer;
   bool _sortByPing = false; // New variable for ping sorting
   bool _sortAscending = true; // New variable for sort direction
-  bool _isPingingServers = false; // New variable for ping loading state
+  bool _isPingingAllServers = false; // Variable for ping all loading state
 
   @override
   void initState() {
@@ -194,18 +194,6 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       groupedConfigs[key]!.add(config);
     }
     return groupedConfigs;
-  }
-
-  Future<void> _loadAllPings() async {
-    final provider = Provider.of<V2RayProvider>(context, listen: false);
-    final configs = provider.configs;
-    final groupedConfigs = _groupConfigsByHost(configs);
-    for (var host in groupedConfigs.keys) {
-      if (!mounted) return;
-      final configsForHost = groupedConfigs[host]!;
-      final representativeConfig = configsForHost.first;
-      await _loadPingForConfig(representativeConfig, configsForHost);
-    }
   }
 
   Future<void> _loadPingForConfig(
@@ -286,6 +274,91 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     } catch (e) {
       debugPrint('Error pinging server ${config.remark}: $e');
       return -1; // Return -1 on error
+    }
+  }
+
+  // Method to ping all servers in the current filter tab in batches of 5
+  Future<void> _pingAllServersInBatches() async {
+    if (_isPingingAllServers) return;
+
+    try {
+      setState(() {
+        _isPingingAllServers = true;
+        // Clear existing pings when starting new test
+        _pings.clear();
+        _loadingPings.clear();
+      });
+
+      final provider = Provider.of<V2RayProvider>(context, listen: false);
+      final subscriptions = provider.subscriptions;
+      
+      // Get configs based on current filter
+      List<V2RayConfig> configsToPing = [];
+      if (_selectedFilter == 'All') {
+        configsToPing = provider.configs;
+      } else if (_selectedFilter == 'Local') {
+        // Get local configs (not in any subscription)
+        final allSubscriptionConfigIds = subscriptions
+            .expand((sub) => sub.configIds)
+            .toSet();
+        configsToPing = provider.configs
+            .where((config) => !allSubscriptionConfigIds.contains(config.id))
+            .toList();
+      } else {
+        // Get configs for specific subscription
+        final subscription = subscriptions.firstWhere(
+          (sub) => sub.name == _selectedFilter,
+          orElse: () => Subscription(
+            id: '',
+            name: '',
+            url: '',
+            lastUpdated: DateTime.now(),
+            configIds: [],
+          ),
+        );
+        configsToPing = provider.configs
+            .where((config) => subscription.configIds.contains(config.id))
+            .toList();
+      }
+
+      // Process configs in batches of 5
+      for (int i = 0; i < configsToPing.length; i += 5) {
+        if (!mounted) break;
+
+        final endIndex = (i + 5 < configsToPing.length) ? i + 5 : configsToPing.length;
+        final batch = configsToPing.sublist(i, endIndex);
+
+        // Ping all configs in the batch in parallel
+        final futures = <Future<void>>[];
+        for (final config in batch) {
+          if (!mounted) break;
+          futures.add(_loadPingForConfig(config, [config]));
+        }
+
+        // Wait for all configs in the batch to complete
+        await Future.wait(futures);
+
+        // Small delay between batches to avoid overwhelming the system
+        if (mounted && i + 5 < configsToPing.length) {
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in ping all operation: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error testing all servers: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPingingAllServers = false;
+        });
+      }
     }
   }
 
@@ -549,7 +622,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       }
 
       // Check if we found a valid server
-      if (ping != null && ping > 0 && ping < 5000) {
+      if (ping != null && ping > 0 && ping < 8000) {
         // Valid ping range
         if (mounted && !completer.isCompleted) {
           try {
@@ -621,9 +694,9 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
     // Add sort and ping buttons in the app bar actions
     final List<Widget> appBarActions = [
-      // Ping button
+      // Ping All button
       IconButton(
-        icon: _isPingingServers
+        icon: _isPingingAllServers
             ? const SizedBox(
                 width: 24,
                 height: 24,
@@ -634,120 +707,12 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                   ),
                 ),
               )
-            : const Icon(Icons.network_check),
-        tooltip: context.tr(TranslationKeys.serverSelectionTestPing),
-        onPressed: _isPingingServers
+            : const Icon(Icons.flash_on),
+        tooltip: 'Ping All Servers in Current Tab (5 at a time)',
+        onPressed: _isPingingAllServers
             ? null
             : () async {
-                // Prevent multiple ping operations at once
-                if (_isPingingServers) return;
-
-                try {
-                  if (mounted) {
-                    setState(() {
-                      _isPingingServers = true;
-                      // Clear existing pings when starting new test
-                      _pings.clear();
-                      _loadingPings.clear();
-                    });
-                  }
-
-                  if (_selectedFilter == 'All') {
-                    await _loadAllPings();
-                  } else if (_selectedFilter == 'Local') {
-                    // Get local configs (not in any subscription)
-                    final allSubscriptionConfigIds = subscriptions
-                        .expand((sub) => sub.configIds)
-                        .toSet();
-                    final provider = Provider.of<V2RayProvider>(
-                      context,
-                      listen: false,
-                    );
-                    final allConfigs = provider.configs;
-                    final localConfigs = allConfigs
-                        .where(
-                          (config) =>
-                              !allSubscriptionConfigIds.contains(config.id),
-                        )
-                        .toList();
-
-                    // Test pings for local configs with error handling
-                    for (var config in localConfigs) {
-                      if (!mounted) break;
-                      try {
-                        await _loadPingForConfig(config, [config]);
-                      } catch (e) {
-                        debugPrint(
-                          'Error pinging local config ${config.remark}: $e',
-                        );
-                        // Continue with next config instead of crashing
-                      }
-                    }
-                  } else {
-                    try {
-                      final subscription = subscriptions.firstWhere(
-                        (sub) => sub.name == _selectedFilter,
-                        orElse: () => Subscription(
-                          id: '',
-                          name: '',
-                          url: '',
-                          lastUpdated: DateTime.now(),
-                          configIds: [],
-                        ),
-                      );
-                      final provider = Provider.of<V2RayProvider>(
-                        context,
-                        listen: false,
-                      );
-                      final allConfigs = provider.configs;
-                      final configsToTest = allConfigs
-                          .where(
-                            (config) =>
-                                subscription.configIds.contains(config.id),
-                          )
-                          .toList();
-
-                      // Test pings for subscription configs with error handling
-                      for (var config in configsToTest) {
-                        if (!mounted) break;
-                        try {
-                          await _loadPingForConfig(config, [config]);
-                        } catch (e) {
-                          debugPrint(
-                            'Error pinging subscription config ${config.remark}: $e',
-                          );
-                          // Continue with next config instead of crashing
-                        }
-                      }
-                    } catch (e) {
-                      debugPrint('Error processing subscription filter: $e');
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error testing servers: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  }
-                } catch (e) {
-                  debugPrint('Error in ping operation: $e');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error testing servers: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                } finally {
-                  if (mounted) {
-                    setState(() {
-                      _isPingingServers = false;
-                    });
-                  }
-                }
+                await _pingAllServersInBatches();
               },
       ),
       // Sort button
@@ -873,7 +838,8 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                   }
 
                   setState(() {});
-                  await _loadAllPings();
+                  // Ping all servers in current tab after refresh
+                  await _pingAllServersInBatches();
 
                   if (provider.errorMessage.isNotEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(

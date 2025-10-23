@@ -59,7 +59,7 @@ class _PingTestScreenState extends State<PingTestScreen> {
       final result = await NativePingService.pingHost(
         host: host,
         port: port,
-        timeoutMs: 5000,
+        timeoutMs: 8000,
         useIcmp: true,
         useTcp: true,
         useCache: false,
