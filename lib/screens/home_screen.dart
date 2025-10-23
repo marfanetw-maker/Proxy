@@ -11,6 +11,7 @@ import '../widgets/background_gradient.dart';
 import '../theme/app_theme.dart';
 import 'about_screen.dart';
 import '../services/v2ray_service.dart';
+import '../services/wallpaper_service.dart';
 import 'subscription_management_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -404,62 +405,68 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         final ipInfo = v2rayService.ipInfo;
 
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.cardDark,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        return Consumer<WallpaperService>(
+          builder: (context, wallpaperService, _) {
+            final isGlassBackground = wallpaperService.isGlassBackgroundEnabled;
+            
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isGlassBackground ? AppTheme.cardDark.withOpacity(0.7) : AppTheme.cardDark,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.tr('home.connection_statistics'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildStatRow(
-                Icons.timer,
-                context.tr(TranslationKeys.homeConnectionTime),
-                v2rayService.getFormattedConnectedTime(),
-              ),
-              const Divider(height: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr('home.connection_statistics'),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildStatRow(
+                    Icons.timer,
+                    context.tr(TranslationKeys.homeConnectionTime),
+                    v2rayService.getFormattedConnectedTime(),
+                  ),
+                  const Divider(height: 24),
 
-              // Total traffic usage
-              _buildTrafficRow(
-                context.tr('home.traffic_usage'),
-                v2rayService.getFormattedUpload(),
-                v2rayService.getFormattedDownload(),
-                v2rayService.getFormattedTotalTraffic(),
+                  // Total traffic usage
+                  _buildTrafficRow(
+                    context.tr('home.traffic_usage'),
+                    v2rayService.getFormattedUpload(),
+                    v2rayService.getFormattedDownload(),
+                    v2rayService.getFormattedTotalTraffic(),
+                  ),
+                  const Divider(height: 24),
+                  // Server ping information removed
+                  if (v2rayService.isLoadingIpInfo)
+                    _buildLoadingIpInfoRow()
+                  else if (ipInfo != null && ipInfo.success)
+                    _buildIpInfoRow(ipInfo, provider)
+                  else
+                    _buildIpErrorRow(
+                      context.tr('home.ip_information'),
+                      ipInfo?.errorMessage ?? context.tr('home.cant_get_ip'),
+                      () async {
+                        // Retry fetching IP info
+                        await v2rayService.fetchIpInfo();
+                      },
+                    ),
+                ],
               ),
-              const Divider(height: 24),
-              // Server ping information removed
-              if (v2rayService.isLoadingIpInfo)
-                _buildLoadingIpInfoRow()
-              else if (ipInfo != null && ipInfo.success)
-                _buildIpInfoRow(ipInfo, provider)
-              else
-                _buildIpErrorRow(
-                  context.tr('home.ip_information'),
-                  ipInfo?.errorMessage ?? context.tr('home.cant_get_ip'),
-                  () async {
-                    // Retry fetching IP info
-                    await v2rayService.fetchIpInfo();
-                  },
-                ),
-            ],
-          ),
+            );
+          }
         );
       },
     );
