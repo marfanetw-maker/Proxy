@@ -408,12 +408,14 @@ class _HomeScreenState extends State<HomeScreen> {
         return Consumer<WallpaperService>(
           builder: (context, wallpaperService, _) {
             final isGlassBackground = wallpaperService.isGlassBackgroundEnabled;
-            
+
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isGlassBackground ? AppTheme.cardDark.withOpacity(0.7) : AppTheme.cardDark,
+                color: isGlassBackground
+                    ? AppTheme.cardDark.withOpacity(0.7)
+                    : AppTheme.cardDark,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -466,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             );
-          }
+          },
         );
       },
     );

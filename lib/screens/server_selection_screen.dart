@@ -44,7 +44,8 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
   Future<int> _getPingBatchSize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final int batchSize = prefs.getInt(_pingBatchSizeKey) ?? 5; // Default to 5
+      final int batchSize =
+          prefs.getInt(_pingBatchSizeKey) ?? 5; // Default to 5
       // Ensure the value is between 1 and 10
       if (batchSize < 1) return 1;
       if (batchSize > 10) return 10;
@@ -314,7 +315,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
 
       final provider = Provider.of<V2RayProvider>(context, listen: false);
       final subscriptions = provider.subscriptions;
-      
+
       // Get configs based on current filter
       List<V2RayConfig> configsToPing = [];
       if (_selectedFilter == 'All') {
@@ -402,35 +403,59 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     try {
       // Get the batch size from settings
       final int batchSizeSetting = await _getPingBatchSize();
-      // Use a smaller batch size for auto-connect (max 3) to be more responsive
-      final int batchSize = min(batchSizeSetting, 3);
+      // Calculate the number of servers to test (2x the batch size)
+      final int serversToTest = batchSizeSetting * 2;
 
-      while (remainingConfigs.isNotEmpty && selectedConfig == null && mounted) {
-        final currentBatchSize = min(batchSize, remainingConfigs.length);
-        final currentBatch = remainingConfigs.take(currentBatchSize).toList();
-        remainingConfigs.removeRange(0, currentBatchSize);
+      // Determine how many servers to actually test (min of serversToTest and total available)
+      final int actualServersToTest = min(
+        serversToTest,
+        remainingConfigs.length,
+      );
 
-        // Check mounted state before updating stream
-        if (!mounted) break;
+      // Take the first 'actualServersToTest' servers for testing
+      final configsToTest = remainingConfigs.take(actualServersToTest).toList();
 
+      // Show initial status message
+      if (mounted) {
         try {
           _autoConnectStatusStream.add(
             context.tr(
               TranslationKeys.serverSelectionTestingBatch,
-              parameters: {'count': currentBatch.length.toString()},
+              parameters: {'count': actualServersToTest.toString()},
             ),
           );
         } catch (e) {
           debugPrint('Error updating status stream: $e');
         }
+      }
 
-        final completer = Completer<V2RayConfig?>();
+      // Create a map to store ping results
+      final Map<V2RayConfig, int?> pingResults = {};
+
+      // Process configs in smaller batches for better responsiveness
+      final int processingBatchSize = min(
+        batchSizeSetting,
+        3,
+      ); // Max 3 for responsiveness
+      int testedCount = 0;
+
+      while (testedCount < configsToTest.length && mounted) {
+        final currentBatchSize = min(
+          processingBatchSize,
+          configsToTest.length - testedCount,
+        );
+        final currentBatch = configsToTest
+            .skip(testedCount)
+            .take(currentBatchSize)
+            .toList();
+
+        final completer = Completer<Map<V2RayConfig, int?>>();
 
         // Create a timeout with proper cleanup
         _batchTimeoutTimer?.cancel();
-        _batchTimeoutTimer = Timer(const Duration(seconds: 8), () {
+        _batchTimeoutTimer = Timer(const Duration(seconds: 10), () {
           if (!completer.isCompleted && mounted) {
-            debugPrint('Batch timeout reached, moving to next batch');
+            debugPrint('Batch timeout reached');
             try {
               _autoConnectStatusStream.add(
                 context.tr(TranslationKeys.serverSelectionBatchTimeout),
@@ -438,25 +463,37 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             } catch (e) {
               debugPrint('Error updating status stream on timeout: $e');
             }
-            completer.complete(null);
+            completer.complete({});
           }
         });
 
         try {
           // Start ping tasks for current batch
-          final pingFutures = currentBatch.map(
-            (config) => _processPingTask(config, completer),
-          );
-          await Future.wait(pingFutures, eagerError: false);
+          final pingFutures = currentBatch
+              .map((config) => _processBatchPingTask(config))
+              .toList();
 
-          // Wait for completer to complete or timeout
-          selectedConfig = await completer.future.timeout(
-            const Duration(seconds: 8),
-            onTimeout: () {
-              debugPrint('Completer timeout reached');
-              return null;
-            },
-          );
+          // Wait for all ping tasks to complete
+          final results = await Future.wait(pingFutures);
+
+          // Combine results
+          for (int i = 0; i < currentBatch.length; i++) {
+            pingResults[currentBatch[i]] = results[i];
+          }
+
+          // Update tested count
+          testedCount += currentBatchSize;
+
+          // Update status with progress
+          if (mounted) {
+            try {
+              _autoConnectStatusStream.add(
+                '${context.tr(TranslationKeys.serverSelectionTestingBatch, parameters: {'count': actualServersToTest.toString()})} (${testedCount}/${actualServersToTest})',
+              );
+            } catch (e) {
+              debugPrint('Error updating status stream: $e');
+            }
+          }
 
           _batchTimeoutTimer?.cancel();
         } catch (e) {
@@ -466,7 +503,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             debugPrint('Error in batch processing: $e');
           }
           _batchTimeoutTimer?.cancel();
-          continue;
+          break;
         }
       }
 
@@ -477,15 +514,28 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       // Check if widget is still mounted before proceeding
       if (!mounted) return;
 
-      if (selectedConfig != null) {
+      // Find the server with the best ping from the tested servers
+      int? bestPing = null;
+      for (final entry in pingResults.entries) {
+        final ping = entry.value;
+        if (ping != null && ping > 0 && ping < 8000) {
+          // Valid ping range
+          if (bestPing == null || ping < bestPing) {
+            bestPing = ping;
+            selectedConfig = entry.key;
+          }
+        }
+      }
+
+      if (selectedConfig != null && bestPing != null) {
         try {
           if (mounted) {
             _autoConnectStatusStream.add(
               context.tr(
-                TranslationKeys.serverSelectionFastestConnection,
+                TranslationKeys.serverSelectionLowestPing,
                 parameters: {
                   'server': selectedConfig.remark,
-                  'ping': _pings[selectedConfig.id].toString(),
+                  'ping': bestPing.toString(),
                 },
               ),
             );
@@ -567,38 +617,22 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             ),
           );
         } catch (navError) {
-          debugPrint('Error with navigation/snackbar in auto-connect: $navError');
+          debugPrint(
+            'Error with navigation/snackbar in auto-connect: $navError',
+          );
         }
       }
     }
   }
 
-  Future<void> _processPingTask(
-    V2RayConfig config,
-    Completer<V2RayConfig?> completer,
-  ) async {
-    // Early return if widget unmounted or completer already completed
-    if (!mounted ||
-        completer.isCompleted ||
-        _cancelPingTasks[config.id] == true) {
-      return;
+  // New helper method to ping a single server and return the result
+  Future<int?> _processBatchPingTask(V2RayConfig config) async {
+    // Early return if widget unmounted
+    if (!mounted || _cancelPingTasks[config.id] == true) {
+      return null;
     }
 
     try {
-      // Safely update status stream
-      if (mounted && !completer.isCompleted) {
-        try {
-          _autoConnectStatusStream.add(
-            context.tr(
-              TranslationKeys.serverSelectionTestingServer,
-              parameters: {'server': config.remark},
-            ),
-          );
-        } catch (e) {
-          debugPrint('Error updating status stream: $e');
-        }
-      }
-
       // Ping the server with timeout
       int? ping;
       try {
@@ -618,77 +652,12 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
         ping = -1; // Return -1 on error
       }
 
-      // Check if we should continue (widget still mounted and completer not completed)
-      if (!mounted ||
-          completer.isCompleted ||
-          _cancelPingTasks[config.id] == true) {
-        return;
-      }
-
-      // Safely update state
-      try {
-        if (mounted) {
-          setState(() {
-            _pings[config.id] = ping;
-            _loadingPings[config.id] = false;
-          });
-        }
-      } catch (e) {
-        debugPrint('Error updating ping state for ${config.remark}: $e');
-      }
-
-      // Check if we found a valid server
-      if (ping != null && ping > 0 && ping < 8000) {
-        // Valid ping range
-        if (mounted && !completer.isCompleted) {
-          try {
-            _autoConnectStatusStream.add(
-              context.tr(
-                TranslationKeys.serverSelectionLowestPing,
-                parameters: {'server': config.remark, 'ping': ping.toString()},
-              ),
-            );
-            _cancelAllPingTasks();
-            completer.complete(config);
-          } catch (e) {
-            debugPrint(
-              'Error completing successful ping for ${config.remark}: $e',
-            );
-          }
-        }
-      } else {
-        // Server failed or had invalid ping
-        if (mounted && !completer.isCompleted) {
-          try {
-            _autoConnectStatusStream.add(
-              context.tr(
-                TranslationKeys.serverSelectionTimeout,
-                parameters: {'server': config.remark},
-              ),
-            );
-          } catch (e) {
-            debugPrint('Error updating failed status for ${config.remark}: $e');
-          }
-        }
-      }
+      return ping;
     } catch (e) {
       debugPrint(
-        'Unexpected error in _processPingTask for ${config.remark}: $e',
+        'Unexpected error in _processBatchPingTask for ${config.remark}: $e',
       );
-
-      // Safely update loading state on error
-      try {
-        if (mounted && !completer.isCompleted) {
-          setState(() {
-            _pings[config.id] = -1; // Set -1 for failed pings
-            _loadingPings[config.id] = false;
-          });
-        }
-      } catch (stateError) {
-        debugPrint(
-          'Error updating error state for ${config.remark}: $stateError',
-        );
-      }
+      return -1;
     }
   }
 

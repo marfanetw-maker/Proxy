@@ -74,8 +74,6 @@ class _PrivacyWelcomeScreenState extends State<PrivacyWelcomeScreen> {
       return;
     }
 
-
-
     // If on channels page, proceed to next page
     if (_currentPage == 4) {
       // No special handling required for channels page
