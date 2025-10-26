@@ -42,8 +42,8 @@ android {
         applicationId = "com.cloud.pira"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 44
-        versionName = "3.7.4"
+        versionCode = 45
+        versionName = "3.7.5"
 
         manifestPlaceholders.put("io.flutter.embedding.android.EnableImpeller", "false")
     }
@@ -66,8 +66,7 @@ android {
     buildTypes {
         getByName("release") {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
             ndk {
                 abiFilters.addAll(listOf("x86_64", "armeabi-v7a", "arm64-v8a"))
                 debugSymbolLevel = "FULL"
