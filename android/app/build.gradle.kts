@@ -74,8 +74,7 @@ android {
         }
         getByName("debug") {
             signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
             ndk {
                 abiFilters.addAll(listOf("x86_64", "armeabi-v7a", "arm64-v8a"))
                 debugSymbolLevel = "FULL"
