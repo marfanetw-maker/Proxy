@@ -66,6 +66,8 @@ android {
     buildTypes {
         getByName("release") {
             signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
             ndk {
                 abiFilters.addAll(listOf("x86_64", "armeabi-v7a", "arm64-v8a"))
                 debugSymbolLevel = "FULL"
@@ -73,6 +75,8 @@ android {
         }
         getByName("debug") {
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+            isShrinkResources = false
             ndk {
                 abiFilters.addAll(listOf("x86_64", "armeabi-v7a", "arm64-v8a"))
                 debugSymbolLevel = "FULL"
