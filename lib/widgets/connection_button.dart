@@ -9,11 +9,13 @@ class ConnectionButton extends StatelessWidget {
 
   // Helper method to handle async selection and connection
   Future<void> _connectToFirstServer(V2RayProvider provider) async {
-    await provider.selectConfig(provider.configs.first);
-    await provider.connectToServer(
-      provider.configs.first,
-      provider.isProxyMode,
-    );
+    if (provider.configs.isNotEmpty) {
+      await provider.selectConfig(provider.configs.first);
+      await provider.connectToServer(
+        provider.configs.first,
+        provider.isProxyMode,
+      );
+    }
   }
 
   @override
@@ -43,18 +45,39 @@ class ConnectionButton extends StatelessWidget {
 
         return GestureDetector(
           onTap: () async {
-            if (isConnecting) return; // Prevent multiple taps while connecting
+            // Prevent multiple taps while connecting or initializing
+            if (isConnecting || provider.isInitializing) {
+              return;
+            }
 
-            if (isConnected) {
-              await provider.disconnect();
-            } else if (selectedConfig != null) {
-              await provider.connectToServer(
-                selectedConfig,
-                provider.isProxyMode,
+            try {
+              if (isConnected) {
+                await provider.disconnect();
+              } else if (selectedConfig != null) {
+                await provider.connectToServer(
+                  selectedConfig,
+                  provider.isProxyMode,
+                );
+              } else if (provider.configs.isNotEmpty) {
+                // Auto-select first config if none selected
+                await _connectToFirstServer(provider);
+              } else {
+                // Show a message if no configs are available
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No server configurations available'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            } catch (e) {
+              // Show error message
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Connection error: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
               );
-            } else if (provider.configs.isNotEmpty) {
-              // Auto-select first config if none selected
-              await _connectToFirstServer(provider);
             }
           },
           child: Container(

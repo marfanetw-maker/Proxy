@@ -109,6 +109,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       notifyListeners();
     } catch (e) {
       _setError('Failed to initialize: $e');
+      debugPrint('Initialization error: $e');
     } finally {
       _setLoading(false);
       _isInitializing = false; // Clear initialization flag
@@ -714,13 +715,15 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     // Maximum number of connection attempts
     const int maxAttempts = 3;
     // Delay between attempts in seconds
-    const int retryDelaySeconds = 1;
+    const int retryDelaySeconds = 2;
 
     try {
       // Disconnect from current server if connected
       if (_v2rayService.activeConfig != null) {
         try {
           await _v2rayService.disconnect();
+          // Add a small delay to ensure disconnection is complete
+          await Future.delayed(const Duration(milliseconds: 500));
         } catch (e) {
           debugPrint('Error disconnecting from current server: $e');
           // Continue with connection attempt even if disconnect failed
@@ -730,8 +733,10 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       // Try to connect with automatic retry
       bool success = false;
       String lastError = '';
+      int attemptCount = 0;
 
       for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+        attemptCount = attempt;
         try {
           debugPrint(
             'Connection attempt $attempt/$maxAttempts for ${config.remark}',
@@ -750,7 +755,17 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
 
           if (success) {
             debugPrint('Connection successful for ${config.remark}');
-            break;
+            // Verify the connection is actually established
+            await Future.delayed(const Duration(seconds: 1));
+            final connectionVerified = await _v2rayService.isActuallyConnected();
+            if (connectionVerified) {
+              debugPrint('Connection verified for ${config.remark}');
+              break;
+            } else {
+              debugPrint('Connection verification failed for ${config.remark}');
+              success = false;
+              lastError = 'Connection verification failed';
+            }
           } else {
             // Connection failed but no exception was thrown
             lastError =
@@ -820,7 +835,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
         }
       } else {
         _setError(
-          'Failed to connect to ${config.remark} after $maxAttempts attempts: $lastError',
+          'Failed to connect to ${config.remark} after $attemptCount attempts: $lastError',
         );
       }
     } catch (e) {

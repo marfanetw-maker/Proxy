@@ -224,6 +224,7 @@ class V2RayService extends ChangeNotifier {
       // Request permission if needed (for VPN mode)
       bool hasPermission = await _flutterV2ray.requestPermission();
       if (!hasPermission) {
+        debugPrint('VPN permission not granted');
         return false;
       }
 
@@ -274,6 +275,9 @@ class V2RayService extends ChangeNotifier {
       // Get blocked apps from shared preferences
       final blockedAppsList = prefs.getStringList('blocked_apps');
 
+      // Add a small delay before starting connection to ensure clean state
+      await Future.delayed(const Duration(milliseconds: 300));
+
       // Start V2Ray in VPN mode
       await _flutterV2ray.startV2Ray(
         remark: parser.remark,
@@ -293,6 +297,20 @@ class V2RayService extends ChangeNotifier {
       // Start monitoring usage statistics
       _startUsageMonitoring();
 
+      // Verify the connection was actually established
+      await Future.delayed(const Duration(milliseconds: 500));
+      final connectionVerified = await isActuallyConnected();
+      if (!connectionVerified) {
+        debugPrint('Connection verification failed immediately after connection');
+        // Try to disconnect to clean up
+        try {
+          await disconnect();
+        } catch (e) {
+          debugPrint('Error cleaning up failed connection: $e');
+        }
+        return false;
+      }
+
       // Fetch IP information after a 2-second delay to ensure connection is stable
       Future.delayed(const Duration(seconds: 2), () {
         fetchIpInfo()
@@ -309,6 +327,12 @@ class V2RayService extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error connecting to V2Ray: $e');
+      // Try to disconnect to clean up any partial connection
+      try {
+        await disconnect();
+      } catch (disconnectError) {
+        debugPrint('Error cleaning up after connection failure: $disconnectError');
+      }
       return false;
     }
   }

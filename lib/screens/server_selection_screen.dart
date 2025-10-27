@@ -406,123 +406,147 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       // Calculate the number of servers to test (2x the batch size)
       final int serversToTest = batchSizeSetting * 2;
 
-      // Determine how many servers to actually test (min of serversToTest and total available)
-      final int actualServersToTest = min(
-        serversToTest,
-        remainingConfigs.length,
-      );
+      // Track which servers we've already tested
+      int testedOffset = 0;
+      bool foundValidServer = false;
+      int? bestPing; // Move declaration outside the loop
 
-      // Take the first 'actualServersToTest' servers for testing
-      final configsToTest = remainingConfigs.take(actualServersToTest).toList();
-
-      // Show initial status message
-      if (mounted) {
-        try {
-          _autoConnectStatusStream.add(
-            context.tr(
-              TranslationKeys.serverSelectionTestingBatch,
-              parameters: {'count': actualServersToTest.toString()},
-            ),
-          );
-        } catch (e) {
-          debugPrint('Error updating status stream: $e');
-        }
-      }
-
-      // Create a map to store ping results
-      final Map<V2RayConfig, int?> pingResults = {};
-
-      // Process configs in smaller batches for better responsiveness
-      final int processingBatchSize = min(
-        batchSizeSetting,
-        3,
-      ); // Max 3 for responsiveness
-      int testedCount = 0;
-
-      while (testedCount < configsToTest.length && mounted) {
-        final currentBatchSize = min(
-          processingBatchSize,
-          configsToTest.length - testedCount,
+      // Continue testing batches until we find a valid server or exhaust all servers
+      while (testedOffset < remainingConfigs.length && !foundValidServer && mounted) {
+        // Determine how many servers to actually test in this iteration
+        final int actualServersToTest = min(
+          serversToTest,
+          remainingConfigs.length - testedOffset,
         );
-        final currentBatch = configsToTest
-            .skip(testedCount)
-            .take(currentBatchSize)
-            .toList();
 
-        final completer = Completer<Map<V2RayConfig, int?>>();
+        // If no servers left to test, break
+        if (actualServersToTest <= 0) break;
 
-        // Create a timeout with proper cleanup
-        _batchTimeoutTimer?.cancel();
-        _batchTimeoutTimer = Timer(const Duration(seconds: 10), () {
-          if (!completer.isCompleted && mounted) {
-            debugPrint('Batch timeout reached');
-            try {
-              _autoConnectStatusStream.add(
-                context.tr(TranslationKeys.serverSelectionBatchTimeout),
-              );
-            } catch (e) {
-              debugPrint('Error updating status stream on timeout: $e');
-            }
-            completer.complete({});
+        // Take the next batch of servers for testing
+        final configsToTest = remainingConfigs.skip(testedOffset).take(actualServersToTest).toList();
+
+        // Show status message for current batch
+        if (mounted) {
+          try {
+            _autoConnectStatusStream.add(
+              context.tr(
+                TranslationKeys.serverSelectionTestingBatch,
+                parameters: {'count': actualServersToTest.toString()},
+              ),
+            );
+          } catch (e) {
+            debugPrint('Error updating status stream: $e');
           }
-        });
+        }
 
-        try {
-          // Start ping tasks for current batch
-          final pingFutures = currentBatch
-              .map((config) => _processBatchPingTask(config))
+        // Create a map to store ping results
+        final Map<V2RayConfig, int?> pingResults = {};
+
+        // Process configs in smaller batches for better responsiveness
+        final int processingBatchSize = min(
+          batchSizeSetting,
+          3,
+        ); // Max 3 for responsiveness
+        int testedCount = 0;
+
+        while (testedCount < configsToTest.length && mounted) {
+          final currentBatchSize = min(
+            processingBatchSize,
+            configsToTest.length - testedCount,
+          );
+          final currentBatch = configsToTest
+              .skip(testedCount)
+              .take(currentBatchSize)
               .toList();
 
-          // Wait for all ping tasks to complete
-          final results = await Future.wait(pingFutures);
+          final completer = Completer<Map<V2RayConfig, int?>>();
 
-          // Combine results
-          for (int i = 0; i < currentBatch.length; i++) {
-            pingResults[currentBatch[i]] = results[i];
+          // Create a timeout with proper cleanup
+          _batchTimeoutTimer?.cancel();
+          _batchTimeoutTimer = Timer(const Duration(seconds: 10), () {
+            if (!completer.isCompleted && mounted) {
+              debugPrint('Batch timeout reached');
+              try {
+                _autoConnectStatusStream.add(
+                  context.tr(TranslationKeys.serverSelectionBatchTimeout),
+                );
+              } catch (e) {
+                debugPrint('Error updating status stream on timeout: $e');
+              }
+              completer.complete({});
+            }
+          });
+
+          try {
+            // Start ping tasks for current batch
+            final pingFutures = currentBatch
+                .map((config) => _processBatchPingTask(config))
+                .toList();
+
+            // Wait for all ping tasks to complete
+            final results = await Future.wait(pingFutures);
+
+            // Combine results
+            for (int i = 0; i < currentBatch.length; i++) {
+              pingResults[currentBatch[i]] = results[i];
+            }
+
+            // Update tested count
+            testedCount += currentBatchSize;
+
+            // Update status with progress
+            if (mounted) {
+              try {
+                _autoConnectStatusStream.add(
+                  '${context.tr(TranslationKeys.serverSelectionTestingBatch, parameters: {'count': actualServersToTest.toString()})} (${testedCount}/${actualServersToTest})',
+                );
+              } catch (e) {
+                debugPrint('Error updating status stream: $e');
+              }
+            }
+
+            _batchTimeoutTimer?.cancel();
+          } catch (e) {
+            if (e.toString().contains('timeout')) {
+              debugPrint('Timeout in batch processing: $e');
+            } else {
+              debugPrint('Error in batch processing: $e');
+            }
+            _batchTimeoutTimer?.cancel();
+            break;
           }
+        }
 
-          // Update tested count
-          testedCount += currentBatchSize;
+        // Clean up timer
+        _batchTimeoutTimer?.cancel();
+        _batchTimeoutTimer = null;
 
-          // Update status with progress
-          if (mounted) {
-            try {
-              _autoConnectStatusStream.add(
-                '${context.tr(TranslationKeys.serverSelectionTestingBatch, parameters: {'count': actualServersToTest.toString()})} (${testedCount}/${actualServersToTest})',
-              );
-            } catch (e) {
-              debugPrint('Error updating status stream: $e');
+        // Check if widget is still mounted before proceeding
+        if (!mounted) return;
+
+        // Find the server with the best ping from the tested servers
+        bestPing = null; // Reset for each batch
+        for (final entry in pingResults.entries) {
+          final ping = entry.value;
+          if (ping != null && ping > 0 && ping < 8000) {
+            // Valid ping range
+            if (bestPing == null || ping < bestPing) {
+              bestPing = ping;
+              selectedConfig = entry.key;
             }
           }
-
-          _batchTimeoutTimer?.cancel();
-        } catch (e) {
-          if (e.toString().contains('timeout')) {
-            debugPrint('Timeout in batch processing: $e');
-          } else {
-            debugPrint('Error in batch processing: $e');
-          }
-          _batchTimeoutTimer?.cancel();
-          break;
         }
-      }
 
-      // Clean up timer
-      _batchTimeoutTimer?.cancel();
-      _batchTimeoutTimer = null;
-
-      // Check if widget is still mounted before proceeding
-      if (!mounted) return;
-
-      // Find the server with the best ping from the tested servers
-      int? bestPing = null;
-      for (final entry in pingResults.entries) {
-        final ping = entry.value;
-        if (ping != null && ping > 0 && ping < 8000) {
-          // Valid ping range
-          if (bestPing == null || ping < bestPing) {
-            bestPing = ping;
-            selectedConfig = entry.key;
+        // If we found a valid server, we can stop testing
+        if (selectedConfig != null && bestPing != null) {
+          foundValidServer = true;
+        } else {
+          // Move to the next batch
+          testedOffset += actualServersToTest;
+          
+          // If we've exhausted all servers, break
+          if (testedOffset >= remainingConfigs.length) {
+            break;
           }
         }
       }

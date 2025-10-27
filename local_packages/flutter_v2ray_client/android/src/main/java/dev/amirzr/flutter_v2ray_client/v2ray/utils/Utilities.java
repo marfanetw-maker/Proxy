@@ -68,7 +68,15 @@ public class Utilities {
         v2rayConfig.BYPASS_SUBNETS = bypass_subnets;
         v2rayConfig.APPLICATION_ICON = AppConfigs.APPLICATION_ICON;
         v2rayConfig.APPLICATION_NAME = AppConfigs.APPLICATION_NAME;
-        v2rayConfig.NOTIFICATION_DISCONNECT_BUTTON_NAME = AppConfigs.NOTIFICATION_DISCONNECT_BUTTON_NAME;
+        
+        // Ensure we have a valid disconnect button name
+        if (AppConfigs.NOTIFICATION_DISCONNECT_BUTTON_NAME != null && 
+            !AppConfigs.NOTIFICATION_DISCONNECT_BUTTON_NAME.isEmpty()) {
+            v2rayConfig.NOTIFICATION_DISCONNECT_BUTTON_NAME = AppConfigs.NOTIFICATION_DISCONNECT_BUTTON_NAME;
+        } else {
+            v2rayConfig.NOTIFICATION_DISCONNECT_BUTTON_NAME = "DISCONNECT"; // Fallback to default
+        }
+        
         try {
             JSONObject config_json = new JSONObject(config);
             try {

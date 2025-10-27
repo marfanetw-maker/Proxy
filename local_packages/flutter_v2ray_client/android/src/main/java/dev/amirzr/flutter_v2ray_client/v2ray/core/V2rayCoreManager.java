@@ -325,11 +325,17 @@ public final class V2rayCoreManager {
 
         String notification_channelID = createNotificationChannelID(v2rayConfig.APPLICATION_NAME);
 
+        // Ensure we have a valid disconnect button name
+        String disconnectButtonName = v2rayConfig.NOTIFICATION_DISCONNECT_BUTTON_NAME;
+        if (disconnectButtonName == null || disconnectButtonName.isEmpty()) {
+            disconnectButtonName = "DISCONNECT"; // Fallback to default
+        }
+
         // Build the notification
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, notification_channelID)
                 .setSmallIcon(v2rayConfig.APPLICATION_ICON)
                 .setContentTitle(v2rayConfig.REMARK)
-                .addAction(0, v2rayConfig.NOTIFICATION_DISCONNECT_BUTTON_NAME, stopPendingIntent)
+                .addAction(0, disconnectButtonName, stopPendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_MIN)
                 .setShowWhen(false)
                 .setOnlyAlertOnce(true)
