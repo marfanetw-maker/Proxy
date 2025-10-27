@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../providers/v2ray_provider.dart';
 import '../theme/app_theme.dart';
+import '../utils/auto_select_util.dart';
+import '../utils/app_localizations.dart';
 
-class ConnectionButton extends StatelessWidget {
+class ConnectionButton extends StatefulWidget {
   const ConnectionButton({Key? key}) : super(key: key);
+
+  @override
+  State<ConnectionButton> createState() => _ConnectionButtonState();
+}
+
+class _ConnectionButtonState extends State<ConnectionButton> {
+  // Cancellation token for auto-select operation
+  AutoSelectCancellationToken? _autoSelectCancellationToken;
+  
+  // Stream controller for status updates
+  late final StreamController<String> _autoSelectStatusStream = StreamController<String>.broadcast();
+
+  @override
+  void dispose() {
+    _autoSelectStatusStream.close();
+    super.dispose();
+  }
 
   // Helper method to handle async selection and connection
   Future<void> _connectToFirstServer(V2RayProvider provider) async {
@@ -14,6 +34,121 @@ class ConnectionButton extends StatelessWidget {
       await provider.connectToServer(
         provider.configs.first,
         provider.isProxyMode,
+      );
+    }
+  }
+
+  // Helper method to run auto-select and then connect
+  Future<void> _runAutoSelectAndConnect(BuildContext context, V2RayProvider provider) async {
+    // Create cancellation token for this auto-select operation
+    _autoSelectCancellationToken = AutoSelectCancellationToken();
+
+    // Show a loading dialog while auto-select is running with cancel button
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.secondaryDark,
+        title: Text(
+          context.tr(TranslationKeys.serverSelectionAutoSelect),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              context.tr(TranslationKeys.serverSelectionTestingServers),
+            ),
+            const SizedBox(height: 8),
+            StreamBuilder<String>(
+              stream: _autoSelectStatusStream.stream,
+              builder: (context, snapshot) {
+                return Text(
+                  snapshot.data ?? '',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Cancel the auto-select operation
+              _autoSelectCancellationToken?.cancel();
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              context.tr('common.cancel'),
+              style: const TextStyle(
+                color: AppTheme.primaryGreen,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    try {
+      // Run auto-select algorithm with cancellation support and status updates
+      final result = await AutoSelectUtil.runAutoSelect(
+        provider.configs,
+        provider.v2rayService,
+        (message) {
+          // Update status in the dialog
+          _autoSelectStatusStream.add(message);
+        },
+        cancellationToken: _autoSelectCancellationToken,
+      );
+
+      // Check if operation was cancelled
+      if (result.errorMessage == 'Auto-select cancelled') {
+        // Close the dialog
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('common.cancel')),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Close the dialog
+      Navigator.of(context).pop();
+
+      if (result.selectedConfig != null && result.bestPing != null) {
+        // Select and connect to the best server
+        await provider.selectConfig(result.selectedConfig!);
+        await provider.connectToServer(
+          result.selectedConfig!,
+          provider.isProxyMode,
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.errorMessage ?? 'Auto-select failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Close the dialog
+      Navigator.of(context).pop();
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Auto-select error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -59,13 +194,13 @@ class ConnectionButton extends StatelessWidget {
                   provider.isProxyMode,
                 );
               } else if (provider.configs.isNotEmpty) {
-                // Auto-select first config if none selected
-                await _connectToFirstServer(provider);
+                // No server selected, run auto-select and then connect
+                await _runAutoSelectAndConnect(context, provider);
               } else {
                 // Show a message if no configs are available
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('No server configurations available'),
+                  SnackBar(
+                    content: Text(context.tr(TranslationKeys.serverSelectorNoServers)),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -74,7 +209,7 @@ class ConnectionButton extends StatelessWidget {
               // Show error message
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Connection error: ${e.toString()}'),
+                  content: Text('${context.tr('home.connection_failed')}: ${e.toString()}'),
                   backgroundColor: Colors.red,
                 ),
               );

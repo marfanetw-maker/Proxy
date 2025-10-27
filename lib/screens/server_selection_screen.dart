@@ -9,6 +9,7 @@ import 'package:proxycloud/providers/v2ray_provider.dart';
 import 'package:proxycloud/services/v2ray_service.dart';
 import 'package:proxycloud/theme/app_theme.dart';
 import 'package:proxycloud/utils/app_localizations.dart';
+import 'package:proxycloud/utils/auto_select_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Constants for shared preferences keys
@@ -388,185 +389,91 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
     }
   }
 
+  // Add cancellation token for auto-select
+  AutoSelectCancellationToken? _autoSelectCancellationToken;
+
   Future<void> _runAutoConnectAlgorithm(
     List<V2RayConfig> configs,
     BuildContext context,
   ) async {
     // Clear any existing ping tasks
     _cancelPingTasks.clear();
-    V2RayConfig? selectedConfig;
-    final remainingConfigs = List<V2RayConfig>.from(configs);
 
     // Check if widget is still mounted before starting
     if (!mounted) return;
 
     try {
-      // Get the batch size from settings
-      final int batchSizeSetting = await _getPingBatchSize();
-      // Calculate the number of servers to test (2x the batch size)
-      final int serversToTest = batchSizeSetting * 2;
+      // Create cancellation token for this auto-select operation
+      _autoSelectCancellationToken = AutoSelectCancellationToken();
 
-      // Track which servers we've already tested
-      int testedOffset = 0;
-      bool foundValidServer = false;
-      int? bestPing; // Move declaration outside the loop
-
-      // Continue testing batches until we find a valid server or exhaust all servers
-      while (testedOffset < remainingConfigs.length && !foundValidServer && mounted) {
-        // Determine how many servers to actually test in this iteration
-        final int actualServersToTest = min(
-          serversToTest,
-          remainingConfigs.length - testedOffset,
-        );
-
-        // If no servers left to test, break
-        if (actualServersToTest <= 0) break;
-
-        // Take the next batch of servers for testing
-        final configsToTest = remainingConfigs.skip(testedOffset).take(actualServersToTest).toList();
-
-        // Show status message for current batch
-        if (mounted) {
-          try {
-            _autoConnectStatusStream.add(
-              context.tr(
-                TranslationKeys.serverSelectionTestingBatch,
-                parameters: {'count': actualServersToTest.toString()},
-              ),
-            );
-          } catch (e) {
-            debugPrint('Error updating status stream: $e');
-          }
-        }
-
-        // Create a map to store ping results
-        final Map<V2RayConfig, int?> pingResults = {};
-
-        // Process configs in smaller batches for better responsiveness
-        final int processingBatchSize = min(
-          batchSizeSetting,
-          3,
-        ); // Max 3 for responsiveness
-        int testedCount = 0;
-
-        while (testedCount < configsToTest.length && mounted) {
-          final currentBatchSize = min(
-            processingBatchSize,
-            configsToTest.length - testedCount,
+      // Show initial status message
+      if (mounted) {
+        try {
+          _autoConnectStatusStream.add(
+            context.tr(
+              TranslationKeys.serverSelectionTestingServers,
+            ),
           );
-          final currentBatch = configsToTest
-              .skip(testedCount)
-              .take(currentBatchSize)
-              .toList();
-
-          final completer = Completer<Map<V2RayConfig, int?>>();
-
-          // Create a timeout with proper cleanup
-          _batchTimeoutTimer?.cancel();
-          _batchTimeoutTimer = Timer(const Duration(seconds: 10), () {
-            if (!completer.isCompleted && mounted) {
-              debugPrint('Batch timeout reached');
-              try {
-                _autoConnectStatusStream.add(
-                  context.tr(TranslationKeys.serverSelectionBatchTimeout),
-                );
-              } catch (e) {
-                debugPrint('Error updating status stream on timeout: $e');
-              }
-              completer.complete({});
-            }
-          });
-
-          try {
-            // Start ping tasks for current batch
-            final pingFutures = currentBatch
-                .map((config) => _processBatchPingTask(config))
-                .toList();
-
-            // Wait for all ping tasks to complete
-            final results = await Future.wait(pingFutures);
-
-            // Combine results
-            for (int i = 0; i < currentBatch.length; i++) {
-              pingResults[currentBatch[i]] = results[i];
-            }
-
-            // Update tested count
-            testedCount += currentBatchSize;
-
-            // Update status with progress
-            if (mounted) {
-              try {
-                _autoConnectStatusStream.add(
-                  '${context.tr(TranslationKeys.serverSelectionTestingBatch, parameters: {'count': actualServersToTest.toString()})} (${testedCount}/${actualServersToTest})',
-                );
-              } catch (e) {
-                debugPrint('Error updating status stream: $e');
-              }
-            }
-
-            _batchTimeoutTimer?.cancel();
-          } catch (e) {
-            if (e.toString().contains('timeout')) {
-              debugPrint('Timeout in batch processing: $e');
-            } else {
-              debugPrint('Error in batch processing: $e');
-            }
-            _batchTimeoutTimer?.cancel();
-            break;
-          }
-        }
-
-        // Clean up timer
-        _batchTimeoutTimer?.cancel();
-        _batchTimeoutTimer = null;
-
-        // Check if widget is still mounted before proceeding
-        if (!mounted) return;
-
-        // Find the server with the best ping from the tested servers
-        bestPing = null; // Reset for each batch
-        for (final entry in pingResults.entries) {
-          final ping = entry.value;
-          if (ping != null && ping > 0 && ping < 8000) {
-            // Valid ping range
-            if (bestPing == null || ping < bestPing) {
-              bestPing = ping;
-              selectedConfig = entry.key;
-            }
-          }
-        }
-
-        // If we found a valid server, we can stop testing
-        if (selectedConfig != null && bestPing != null) {
-          foundValidServer = true;
-        } else {
-          // Move to the next batch
-          testedOffset += actualServersToTest;
-          
-          // If we've exhausted all servers, break
-          if (testedOffset >= remainingConfigs.length) {
-            break;
-          }
+        } catch (e) {
+          debugPrint('Error updating status stream: $e');
         }
       }
 
-      if (selectedConfig != null && bestPing != null) {
+      // Run auto-select algorithm with cancellation support
+      final result = await AutoSelectUtil.runAutoSelect(
+        configs,
+        _v2rayService,
+        (message) {
+          // Update status
+          if (mounted) {
+            try {
+              _autoConnectStatusStream.add(message);
+            } catch (e) {
+              debugPrint('Error updating status stream: $e');
+            }
+          }
+        },
+        cancellationToken: _autoSelectCancellationToken,
+      );
+
+      // Check if operation was cancelled
+      if (result.errorMessage == 'Auto-select cancelled') {
+        if (mounted) {
+          try {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop(); // Close auto-connect dialog
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  context.tr('common.cancel'),
+                ),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          } catch (e) {
+            debugPrint('Error showing cancellation message: $e');
+          }
+        }
+        return;
+      }
+
+      if (result.selectedConfig != null && result.bestPing != null) {
         try {
           if (mounted) {
             _autoConnectStatusStream.add(
               context.tr(
                 TranslationKeys.serverSelectionLowestPing,
                 parameters: {
-                  'server': selectedConfig.remark,
-                  'ping': bestPing.toString(),
+                  'server': result.selectedConfig!.remark,
+                  'ping': result.bestPing.toString(),
                 },
               ),
             );
           }
 
           // Attempt to connect to the selected server
-          await widget.onConfigSelected(selectedConfig);
+          await widget.onConfigSelected(result.selectedConfig!);
 
           // Safe navigation with proper checks
           if (mounted && Navigator.of(context).canPop()) {
@@ -588,7 +495,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                     context.tr(
                       TranslationKeys.serverSelectionConnectFailed,
                       parameters: {
-                        'server': selectedConfig.remark,
+                        'server': result.selectedConfig!.remark,
                         'error': e.toString(),
                       },
                     ),
@@ -614,7 +521,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    context.tr(TranslationKeys.serverSelectionNoSuitableServer),
+                    result.errorMessage ?? context.tr(TranslationKeys.serverSelectionNoSuitableServer),
                   ),
                   backgroundColor: Colors.orange,
                 ),
@@ -1056,6 +963,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                         ),
                                       );
                                     } else {
+                                      // Show dialog with cancel button
                                       showDialog(
                                         context: context,
                                         barrierDismissible: false,
@@ -1104,6 +1012,21 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                               ),
                                             ],
                                           ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                // Cancel the auto-select operation
+                                                _autoSelectCancellationToken?.cancel();
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: Text(
+                                                context.tr('common.cancel'),
+                                                style: const TextStyle(
+                                                  color: AppTheme.primaryGreen,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       );
                                       await _runAutoConnectAlgorithm(
