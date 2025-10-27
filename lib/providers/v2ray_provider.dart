@@ -19,7 +19,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   bool _isLoadingServers = false;
   bool _isProxyMode = false;
   bool _isInitializing = true; // New flag to track initialization state
-  
+
   // Method channel for VPN control
   static const platform = MethodChannel('com.cloud.pira/vpn_control');
 
@@ -41,11 +41,11 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   V2RayProvider() {
     WidgetsBinding.instance.addObserver(this);
     _initialize();
-    
+
     // Set up method channel handler
     platform.setMethodCallHandler(_handleMethodCall);
   }
-  
+
   // Handle method calls from native side
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
@@ -60,7 +60,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   Future<void> _handleNotificationDisconnect() async {
     // Actually disconnect the VPN service
     await _v2rayService.disconnect();
-    
+
     // Update config status when disconnected from notification
     for (int i = 0; i < _configs.length; i++) {
       _configs[i].isConnected = false;
@@ -85,7 +85,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     _setLoading(true);
     _isInitializing = true; // Set initialization flag
     notifyListeners();
-    
+
     try {
       await _v2rayService.initialize();
 
@@ -121,23 +121,25 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
   Future<void> _enhancedSyncWithVpnServiceState() async {
     try {
       print('Enhanced synchronization with VPN service state...');
-      
+
       // First, check if VPN is actually running using the improved method
       final isActuallyConnected = await _v2rayService.isActuallyConnected();
-      print('VPN service status - Actually connected (primary check): $isActuallyConnected');
-      
+      print(
+        'VPN service status - Actually connected (primary check): $isActuallyConnected',
+      );
+
       // Reset all connection states first
       for (int i = 0; i < _configs.length; i++) {
         _configs[i].isConnected = false;
       }
-      
+
       if (isActuallyConnected) {
         print('VPN is actually running, synchronizing config states...');
-        
+
         // Try to get the active config from service
         final activeConfigFromService = _v2rayService.activeConfig;
         print('Active config from service: ${activeConfigFromService?.remark}');
-        
+
         if (activeConfigFromService != null) {
           bool configFound = false;
 
@@ -161,7 +163,9 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
                 config.isConnected = true;
                 _selectedConfig = config;
                 configFound = true;
-                print('Found matching config by address/port: ${config.remark}');
+                print(
+                  'Found matching config by address/port: ${config.remark}',
+                );
                 break;
               }
             }
@@ -174,14 +178,18 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
             _configs.add(activeConfigFromService);
             activeConfigFromService.isConnected = true;
             _selectedConfig = activeConfigFromService;
-            print('Added active config to list: ${activeConfigFromService.remark}');
+            print(
+              'Added active config to list: ${activeConfigFromService.remark}',
+            );
           }
         } else {
           // VPN is running but we don't have the config details
           // Try to find any config that might be connected
-          print('VPN is running but no active config in service, checking configs...');
+          print(
+            'VPN is running but no active config in service, checking configs...',
+          );
           V2RayConfig? foundConnectedConfig;
-          
+
           // Check if any config has connection details that match a running service
           for (var config in _configs) {
             try {
@@ -196,14 +204,18 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
               print('Error checking config ${config.remark}: $e');
             }
           }
-          
+
           if (foundConnectedConfig == null) {
-            print('Could not identify which config is connected, marking first available');
+            print(
+              'Could not identify which config is connected, marking first available',
+            );
             // As a fallback, mark the first config as connected if we have configs
             if (_configs.isNotEmpty) {
               _configs.first.isConnected = true;
               _selectedConfig = _configs.first;
-              print('Marked first config as connected: ${_configs.first.remark}');
+              print(
+                'Marked first config as connected: ${_configs.first.remark}',
+              );
             }
           }
         }
@@ -214,7 +226,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
           config.isConnected = false;
         }
         _selectedConfig = null;
-        
+
         // Clear active config from service if it exists
         if (_v2rayService.activeConfig != null) {
           await _v2rayService.disconnect();
@@ -422,7 +434,7 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     try {
       // Parse multiple configurations from text (similar to subscription parsing)
       final configs = await _v2rayService.parseSubscriptionContent(configText);
-      
+
       if (configs.isEmpty) {
         throw Exception('No valid configurations found');
       }
@@ -757,7 +769,8 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
             debugPrint('Connection successful for ${config.remark}');
             // Verify the connection is actually established
             await Future.delayed(const Duration(seconds: 1));
-            final connectionVerified = await _v2rayService.isActuallyConnected();
+            final connectionVerified = await _v2rayService
+                .isActuallyConnected();
             if (connectionVerified) {
               debugPrint('Connection verified for ${config.remark}');
               break;
@@ -1025,7 +1038,10 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
     return await _v2rayService.parseSubscriptionContent(content);
   }
 
-  Future<void> addSubscriptionFromFile(String name, List<V2RayConfig> configs) async {
+  Future<void> addSubscriptionFromFile(
+    String name,
+    List<V2RayConfig> configs,
+  ) async {
     _setLoading(true);
     _errorMessage = '';
     try {
@@ -1038,7 +1054,8 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
       final subscription = Subscription(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: name,
-        url: 'file://subscription', // Special indicator for file-based subscriptions
+        url:
+            'file://subscription', // Special indicator for file-based subscriptions
         lastUpdated: DateTime.now(),
         configIds: newConfigIds,
       );

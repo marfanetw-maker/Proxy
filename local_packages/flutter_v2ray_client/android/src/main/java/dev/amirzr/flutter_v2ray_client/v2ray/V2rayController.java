@@ -110,7 +110,7 @@ public class V2rayController {
         IntentFilter delayIntentFilter = new IntentFilter("CONNECTED_V2RAY_SERVER_DELAY");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.registerReceiver(receiver, delayIntentFilter, Context.RECEIVER_EXPORTED);
-        }else{
+        } else {
             context.registerReceiver(receiver, delayIntentFilter);
         }
 
@@ -151,6 +151,5 @@ public class V2rayController {
     public static String getCoreVersion() {
         return Libv2ray.checkVersionX();
     }
-
 
 }

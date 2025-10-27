@@ -190,7 +190,8 @@ If you encounter any issues or have questions, please open an issue on our GitHu
 ## 🙏 Acknowledgements
 
 - [Flutter](https://flutter.dev/) - UI toolkit for building natively compiled applications
-- [V2Ray](https://www.v2ray.com/) - A platform for building proxies to bypass network restrictions
+- [Xray Core](https://github.com/XTLS/Xray-core) - A platform for building proxies to bypass network restrictions
+- [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) - Android library for Xray core
 - [Provider](https://pub.dev/packages/provider) - State management solution
 - All contributors who have helped shape this project
 

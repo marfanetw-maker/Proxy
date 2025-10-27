@@ -12,9 +12,7 @@ import dev.amirzr.flutter_v2ray_client.v2ray.interfaces.V2rayServicesListener;
 import dev.amirzr.flutter_v2ray_client.v2ray.utils.AppConfigs;
 import dev.amirzr.flutter_v2ray_client.v2ray.utils.V2rayConfig;
 
-
 public class V2rayProxyOnlyService extends Service implements V2rayServicesListener {
-
 
     @Override
     public void onCreate() {
@@ -54,7 +52,6 @@ public class V2rayProxyOnlyService extends Service implements V2rayServicesListe
         }
         return START_STICKY;
     }
-
 
     @Override
     public void onDestroy() {

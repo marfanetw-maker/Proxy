@@ -57,3 +57,11 @@ This library has been specifically enhanced and customized for ProxyCloud with:
 ### 📋 Attribution
 
 Based on the original flutter_v2ray_client library with custom modifications for ProxyCloud.
+
+## 🙏 Acknowledgements
+
+- [Flutter](https://flutter.dev/) - UI toolkit for building natively compiled applications
+- [Xray Core](https://github.com/XTLS/Xray-core) - A platform for building proxies to bypass network restrictions
+- [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) - Android library for Xray core
+- [Provider](https://pub.dev/packages/provider) - State management solution
+- All contributors who have helped shape this project

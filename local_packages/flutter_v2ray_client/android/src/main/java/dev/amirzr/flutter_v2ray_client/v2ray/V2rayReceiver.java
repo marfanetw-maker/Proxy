@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import io.flutter.plugin.common.EventChannel;
 
 public class V2rayReceiver extends BroadcastReceiver {
+
     public static EventChannel.EventSink vpnStatusSink;
 
     @Override

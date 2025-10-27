@@ -16,9 +16,9 @@ class AutoSelectResult {
 // Cancellation token class for auto-select operations
 class AutoSelectCancellationToken {
   bool _isCancelled = false;
-  
+
   bool get isCancelled => _isCancelled;
-  
+
   void cancel() {
     _isCancelled = true;
   }
@@ -58,9 +58,7 @@ class AutoSelectUtil {
     try {
       // Check for cancellation before starting
       if (cancellationToken?.isCancelled == true) {
-        return AutoSelectResult(
-          errorMessage: 'Auto-select cancelled',
-        );
+        return AutoSelectResult(errorMessage: 'Auto-select cancelled');
       }
 
       // Get the batch size from settings
@@ -77,9 +75,7 @@ class AutoSelectUtil {
       while (testedOffset < configs.length) {
         // Check for cancellation
         if (cancellationToken?.isCancelled == true) {
-          return AutoSelectResult(
-            errorMessage: 'Auto-select cancelled',
-          );
+          return AutoSelectResult(errorMessage: 'Auto-select cancelled');
         }
 
         // Determine how many servers to actually test in this iteration
@@ -92,13 +88,14 @@ class AutoSelectUtil {
         if (actualServersToTest <= 0) break;
 
         // Take the next batch of servers for testing
-        final configsToTest = configs.skip(testedOffset).take(actualServersToTest).toList();
+        final configsToTest = configs
+            .skip(testedOffset)
+            .take(actualServersToTest)
+            .toList();
 
         // Show status message for current batch
         if (onStatusUpdate != null) {
-          onStatusUpdate(
-            'Testing batch of $actualServersToTest servers...',
-          );
+          onStatusUpdate('Testing batch of $actualServersToTest servers...');
         }
 
         // Create a map to store ping results
@@ -114,9 +111,7 @@ class AutoSelectUtil {
         while (testedCount < configsToTest.length) {
           // Check for cancellation
           if (cancellationToken?.isCancelled == true) {
-            return AutoSelectResult(
-              errorMessage: 'Auto-select cancelled',
-            );
+            return AutoSelectResult(errorMessage: 'Auto-select cancelled');
           }
 
           final currentBatchSize = min(
@@ -134,9 +129,7 @@ class AutoSelectUtil {
             for (final config in currentBatch) {
               // Check for cancellation before pinging each server
               if (cancellationToken?.isCancelled == true) {
-                return AutoSelectResult(
-                  errorMessage: 'Auto-select cancelled',
-                );
+                return AutoSelectResult(errorMessage: 'Auto-select cancelled');
               }
               pingFutures.add(_pingServer(config, v2rayService));
             }
@@ -167,7 +160,7 @@ class AutoSelectUtil {
         // Find the server with the best ping from the tested servers
         int? currentBestPing;
         V2RayConfig? currentSelectedConfig;
-        
+
         for (final entry in pingResults.entries) {
           final ping = entry.value;
           if (ping != null && ping > 0 && ping < 8000) {
@@ -189,7 +182,7 @@ class AutoSelectUtil {
 
         // Move to the next batch
         testedOffset += actualServersToTest;
-        
+
         // If we found a valid server, we can stop testing
         if (selectedConfig != null && bestPing != null) {
           break;
@@ -202,19 +195,18 @@ class AutoSelectUtil {
           bestPing: bestPing,
         );
       } else {
-        return AutoSelectResult(
-          errorMessage: 'No suitable server found',
-        );
+        return AutoSelectResult(errorMessage: 'No suitable server found');
       }
     } catch (e) {
-      return AutoSelectResult(
-        errorMessage: 'Error during auto-select: $e',
-      );
+      return AutoSelectResult(errorMessage: 'Error during auto-select: $e');
     }
   }
 
   /// Ping a single server
-  static Future<int?> _pingServer(V2RayConfig config, V2RayService v2rayService) async {
+  static Future<int?> _pingServer(
+    V2RayConfig config,
+    V2RayService v2rayService,
+  ) async {
     try {
       final delay = await v2rayService.getServerDelay(config);
       return delay;

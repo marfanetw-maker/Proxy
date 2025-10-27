@@ -182,7 +182,8 @@ yay -S proxycloud-gui-bin
 ## 🙏 致谢
 
 - [Flutter](https://flutter.dev/) - 用于构建原生编译应用程序的UI工具包
-- [V2Ray](https://www.v2ray.com/) - 一个用于构建绕过网络限制的代理的平台
+- [Xray Core](https://github.com/XTLS/Xray-core) - 一个用于构建绕过网络限制的代理的平台
+- [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) - Xray核心的Android库
 - [Provider](https://pub.dev/packages/provider) - 状态管理解决方案
 - 所有帮助塑造这个项目的贡献者
 

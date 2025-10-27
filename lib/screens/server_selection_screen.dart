@@ -410,9 +410,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
       if (mounted) {
         try {
           _autoConnectStatusStream.add(
-            context.tr(
-              TranslationKeys.serverSelectionTestingServers,
-            ),
+            context.tr(TranslationKeys.serverSelectionTestingServers),
           );
         } catch (e) {
           debugPrint('Error updating status stream: $e');
@@ -445,9 +443,7 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
             }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  context.tr('common.cancel'),
-                ),
+                content: Text(context.tr('common.cancel')),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -521,7 +517,10 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    result.errorMessage ?? context.tr(TranslationKeys.serverSelectionNoSuitableServer),
+                    result.errorMessage ??
+                        context.tr(
+                          TranslationKeys.serverSelectionNoSuitableServer,
+                        ),
                   ),
                   backgroundColor: Colors.orange,
                 ),
@@ -1016,7 +1015,8 @@ class _ServerSelectionScreenState extends State<ServerSelectionScreen> {
                                             TextButton(
                                               onPressed: () {
                                                 // Cancel the auto-select operation
-                                                _autoSelectCancellationToken?.cancel();
+                                                _autoSelectCancellationToken
+                                                    ?.cancel();
                                                 Navigator.of(context).pop();
                                               },
                                               child: Text(

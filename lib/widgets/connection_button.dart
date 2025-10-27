@@ -17,9 +17,10 @@ class ConnectionButton extends StatefulWidget {
 class _ConnectionButtonState extends State<ConnectionButton> {
   // Cancellation token for auto-select operation
   AutoSelectCancellationToken? _autoSelectCancellationToken;
-  
+
   // Stream controller for status updates
-  late final StreamController<String> _autoSelectStatusStream = StreamController<String>.broadcast();
+  late final StreamController<String> _autoSelectStatusStream =
+      StreamController<String>.broadcast();
 
   @override
   void dispose() {
@@ -39,7 +40,10 @@ class _ConnectionButtonState extends State<ConnectionButton> {
   }
 
   // Helper method to run auto-select and then connect
-  Future<void> _runAutoSelectAndConnect(BuildContext context, V2RayProvider provider) async {
+  Future<void> _runAutoSelectAndConnect(
+    BuildContext context,
+    V2RayProvider provider,
+  ) async {
     // Create cancellation token for this auto-select operation
     _autoSelectCancellationToken = AutoSelectCancellationToken();
 
@@ -49,9 +53,7 @@ class _ConnectionButtonState extends State<ConnectionButton> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.secondaryDark,
-        title: Text(
-          context.tr(TranslationKeys.serverSelectionAutoSelect),
-        ),
+        title: Text(context.tr(TranslationKeys.serverSelectionAutoSelect)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -59,19 +61,14 @@ class _ConnectionButtonState extends State<ConnectionButton> {
               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
             ),
             const SizedBox(height: 16),
-            Text(
-              context.tr(TranslationKeys.serverSelectionTestingServers),
-            ),
+            Text(context.tr(TranslationKeys.serverSelectionTestingServers)),
             const SizedBox(height: 8),
             StreamBuilder<String>(
               stream: _autoSelectStatusStream.stream,
               builder: (context, snapshot) {
                 return Text(
                   snapshot.data ?? '',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 );
               },
             ),
@@ -86,9 +83,7 @@ class _ConnectionButtonState extends State<ConnectionButton> {
             },
             child: Text(
               context.tr('common.cancel'),
-              style: const TextStyle(
-                color: AppTheme.primaryGreen,
-              ),
+              style: const TextStyle(color: AppTheme.primaryGreen),
             ),
           ),
         ],
@@ -142,7 +137,7 @@ class _ConnectionButtonState extends State<ConnectionButton> {
     } catch (e) {
       // Close the dialog
       Navigator.of(context).pop();
-      
+
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -200,7 +195,9 @@ class _ConnectionButtonState extends State<ConnectionButton> {
                 // Show a message if no configs are available
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(context.tr(TranslationKeys.serverSelectorNoServers)),
+                    content: Text(
+                      context.tr(TranslationKeys.serverSelectorNoServers),
+                    ),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -209,7 +206,9 @@ class _ConnectionButtonState extends State<ConnectionButton> {
               // Show error message
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${context.tr('home.connection_failed')}: ${e.toString()}'),
+                  content: Text(
+                    '${context.tr('home.connection_failed')}: ${e.toString()}',
+                  ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -318,7 +317,10 @@ class _ConnectionButtonState extends State<ConnectionButton> {
         AppTheme.connectingBlue.withOpacity(0.7),
       ];
     } else if (isConnected) {
-      return [AppTheme.connectedGreen, AppTheme.connectedGreen.withValues(alpha: 0.7)];
+      return [
+        AppTheme.connectedGreen,
+        AppTheme.connectedGreen.withValues(alpha: 0.7),
+      ];
     } else {
       return [
         AppTheme.disconnectedRed,

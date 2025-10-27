@@ -181,7 +181,8 @@ yay -S proxycloud-gui-bin
 ## 🙏 قدردانی
 
 - [Flutter](https://flutter.dev/) - مجموعه ابزار رابط کاربری برای ساخت برنامه‌های کامپایل شده بومی
-- [V2Ray](https://www.v2ray.com/) - پلتفرمی برای ساخت پروکسی‌ها برای دور زدن محدودیت‌های شبکه
+- [Xray Core](https://github.com/XTLS/Xray-core) - پلتفرمی برای ساخت پروکسی‌ها برای دور زدن محدودیت‌های شبکه
+- [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite) - کتابخانه اندروید برای هسته Xray
 - [Provider](https://pub.dev/packages/provider) - راه حل مدیریت وضعیت
 - تمام مشارکت‌کنندگانی که به شکل‌گیری این پروژه کمک کرده‌اند
 

@@ -33,6 +33,7 @@ import io.flutter.plugin.common.PluginRegistry.ActivityResultListener;
  * FlutterV2rayClientPlugin
  */
 public class FlutterV2rayPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware, ActivityResultListener {
+
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
     /// This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -98,13 +99,13 @@ public class FlutterV2rayPlugin implements FlutterPlugin, MethodCallHandler, Act
                 case "initializeV2Ray":
                     try {
                         V2rayController.init(appContext,
-                                call.argument("notificationIconResourceName") != null ?
-                                        appContext.getResources().getIdentifier(
-                                                call.argument("notificationIconResourceName"),
-                                                call.argument("notificationIconResourceType"),
-                                                appContext.getPackageName()) : 0,
-                                call.argument("notificationIconResourceName") != null ?
-                                        call.argument("notificationIconResourceName") : "");
+                                call.argument("notificationIconResourceName") != null
+                                ? appContext.getResources().getIdentifier(
+                                        call.argument("notificationIconResourceName"),
+                                        call.argument("notificationIconResourceType"),
+                                        appContext.getPackageName()) : 0,
+                                call.argument("notificationIconResourceName") != null
+                                ? call.argument("notificationIconResourceName") : "");
                         result.success(null);
                     } catch (Exception e) {
                         result.error("INITIALIZATION_ERROR", e.getMessage(), null);
@@ -114,9 +115,9 @@ public class FlutterV2rayPlugin implements FlutterPlugin, MethodCallHandler, Act
                     try {
                         Boolean proxyOnly = call.argument("proxy_only");
                         V2rayController.changeConnectionMode(
-                                proxyOnly != null && proxyOnly ?
-                                        AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY :
-                                        AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN);
+                                proxyOnly != null && proxyOnly
+                                        ? AppConfigs.V2RAY_CONNECTION_MODES.PROXY_ONLY
+                                        : AppConfigs.V2RAY_CONNECTION_MODES.VPN_TUN);
 
                         V2rayController.StartV2ray(
                                 activity != null ? activity : appContext,
@@ -170,7 +171,7 @@ public class FlutterV2rayPlugin implements FlutterPlugin, MethodCallHandler, Act
                         if (ActivityCompat.checkSelfPermission(activity,
                                 Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                             ActivityCompat.requestPermissions(activity,
-                                    new String[] { Manifest.permission.POST_NOTIFICATIONS },
+                                    new String[]{Manifest.permission.POST_NOTIFICATIONS},
                                     REQUEST_CODE_POST_NOTIFICATIONS);
                         }
                     }

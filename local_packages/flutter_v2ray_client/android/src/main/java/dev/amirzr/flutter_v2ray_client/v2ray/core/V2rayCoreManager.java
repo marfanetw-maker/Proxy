@@ -37,6 +37,7 @@ import libv2ray.Libv2ray;
 import libv2ray.V2RayProtector;
 
 public final class V2rayCoreManager {
+
     private static final int NOTIFICATION_ID = 1;
     private volatile static V2rayCoreManager INSTANCE;
     public V2rayServicesListener v2rayServicesListener = null;
@@ -100,8 +101,9 @@ public final class V2rayCoreManager {
 
             public void onFinish() {
                 countDownTimer.cancel();
-                if (V2rayCoreManager.getInstance().isV2rayCoreRunning())
+                if (V2rayCoreManager.getInstance().isV2rayCoreRunning()) {
                     makeDurationTimer(context, enable_traffic_statics);
+                }
             }
         }.start();
     }
@@ -197,7 +199,8 @@ public final class V2rayCoreManager {
             try {
                 String server = v2rayConfig.CONNECTED_V2RAY_SERVER_ADDRESS + ":" + v2rayConfig.CONNECTED_V2RAY_SERVER_PORT;
                 Libv2ray.setProtectorServer(server, false);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
             coreController.startLoop(v2rayConfig.V2RAY_FULL_JSON_CONFIG);
             V2RAY_STATE = AppConfigs.V2RAY_STATES.V2RAY_CONNECTED;
             if (isV2rayCoreRunning()) {
@@ -355,8 +358,9 @@ public final class V2rayCoreManager {
 
     public Long getConnectedV2rayServerDelay() {
         try {
-            if (coreController == null)
+            if (coreController == null) {
                 return -1L;
+            }
             return coreController.measureDelay(AppConfigs.DELAY_URL);
         } catch (Exception e) {
             return -1L;
@@ -365,8 +369,9 @@ public final class V2rayCoreManager {
 
     public Long getConnectedV2rayServerDelay(final String url) {
         try {
-            if (coreController == null)
+            if (coreController == null) {
                 return -1L;
+            }
             return coreController.measureDelay(url);
         } catch (Exception e) {
             return -1L;

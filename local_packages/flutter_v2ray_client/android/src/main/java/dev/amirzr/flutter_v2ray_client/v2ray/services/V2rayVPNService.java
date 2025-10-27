@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class V2rayVPNService extends VpnService implements V2rayServicesListener {
+
     private ParcelFileDescriptor mInterface;
     private Process process;
     private V2rayConfig v2rayConfig;
@@ -144,10 +145,22 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
             }
         } catch (Exception e) {
             // If parsing fails, add sane fallback DNS
-            try { builder.addDnsServer("1.1.1.1"); } catch (Exception ignored) {}
-            try { builder.addDnsServer("1.0.0.1"); } catch (Exception ignored) {}
-            try { builder.addDnsServer("8.8.8.8"); } catch (Exception ignored) {}
-            try { builder.addDnsServer("8.8.4.4"); } catch (Exception ignored) {}
+            try {
+                builder.addDnsServer("1.1.1.1");
+            } catch (Exception ignored) {
+            }
+            try {
+                builder.addDnsServer("1.0.0.1");
+            } catch (Exception ignored) {
+            }
+            try {
+                builder.addDnsServer("8.8.8.8");
+            } catch (Exception ignored) {
+            }
+            try {
+                builder.addDnsServer("8.8.4.4");
+            } catch (Exception ignored) {
+            }
         }
         try {
             mInterface.close();
@@ -223,13 +236,14 @@ public class V2rayVPNService extends VpnService implements V2rayServicesListener
                     break;
                 } catch (Exception e) {
                     Log.e(V2rayVPNService.class.getSimpleName(), "sendFd failed =>", e);
-                    if (tries > 5) break;
+                    if (tries > 5) {
+                        break;
+                    }
                     tries += 1;
                 }
             }
         }, "sendFd_Thread").start();
     }
-
 
     @Override
     public void onDestroy() {

@@ -11,10 +11,14 @@ class UpdateService {
   // Check for updates
   Future<AppUpdate?> checkForUpdates() async {
     try {
-      final response = await http.get(Uri.parse(updateUrl)).timeout(
+      final response = await http
+          .get(Uri.parse(updateUrl))
+          .timeout(
             const Duration(seconds: 60),
             onTimeout: () {
-              throw Exception('Network timeout: Check your internet connection');
+              throw Exception(
+                'Network timeout: Check your internet connection',
+              );
             },
           );
       if (response.statusCode == 200) {
@@ -41,7 +45,12 @@ class UpdateService {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(context.tr(TranslationKeys.updateServiceNewVersion, parameters: {'version': update.version})),
+            Text(
+              context.tr(
+                TranslationKeys.updateServiceNewVersion,
+                parameters: {'version': update.version},
+              ),
+            ),
             const SizedBox(height: 8),
             Text(update.messText),
           ],
