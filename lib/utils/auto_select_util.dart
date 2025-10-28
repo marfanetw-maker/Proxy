@@ -131,7 +131,11 @@ class AutoSelectUtil {
               if (cancellationToken?.isCancelled == true) {
                 return AutoSelectResult(errorMessage: 'Auto-select cancelled');
               }
-              pingFutures.add(_pingServer(config, v2rayService));
+              pingFutures.add(_pingServer(
+                config, 
+                v2rayService,
+                cancellationToken: cancellationToken,
+              ));
             }
 
             // Wait for all ping tasks to complete
@@ -205,10 +209,11 @@ class AutoSelectUtil {
   /// Ping a single server
   static Future<int?> _pingServer(
     V2RayConfig config,
-    V2RayService v2rayService,
-  ) async {
+    V2RayService v2rayService, {
+    AutoSelectCancellationToken? cancellationToken,
+  }) async {
     try {
-      final delay = await v2rayService.getServerDelay(config);
+      final delay = await v2rayService.getServerDelay(config, cancellationToken: cancellationToken);
       return delay;
     } catch (e) {
       return -1; // Return -1 on error

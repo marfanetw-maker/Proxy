@@ -8,6 +8,7 @@ import 'package:proxycloud/models/v2ray_config.dart';
 import 'package:proxycloud/models/subscription.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:proxycloud/utils/auto_select_util.dart';
 
 class IpInfo {
   final String ip;
@@ -505,11 +506,16 @@ class V2RayService extends ChangeNotifier {
   }
 
   // Get server delay/ping for a specific config using V2Ray's built-in method
-  Future<int?> getServerDelay(V2RayConfig config) async {
+  Future<int?> getServerDelay(V2RayConfig config, {AutoSelectCancellationToken? cancellationToken}) async {
     final configId = config.id;
     final hostKey = '${config.address}:${config.port}';
 
     try {
+      // Check for cancellation before starting
+      if (cancellationToken?.isCancelled == true) {
+        return null;
+      }
+
       // Return cached ping if available - first check by host, then by configId
       if (_pingCache.containsKey(hostKey)) {
         final cachedValue = _pingCache[hostKey];
@@ -532,6 +538,10 @@ class V2RayService extends ChangeNotifier {
         while ((_pingInProgress[hostKey] == true ||
                 _pingInProgress[configId] == true) &&
             attempts < 25) {
+          // Check for cancellation while waiting
+          if (cancellationToken?.isCancelled == true) {
+            return null;
+          }
           await Future.delayed(const Duration(milliseconds: 200));
           attempts++;
         }
@@ -543,8 +553,22 @@ class V2RayService extends ChangeNotifier {
       _pingInProgress[configId] = true;
 
       try {
+        // Check for cancellation before initializing
+        if (cancellationToken?.isCancelled == true) {
+          _pingInProgress[hostKey] = false;
+          _pingInProgress[configId] = false;
+          return null;
+        }
+
         // Use V2Ray's built-in ping method for better accuracy
         await initialize();
+
+        // Check for cancellation after initializing
+        if (cancellationToken?.isCancelled == true) {
+          _pingInProgress[hostKey] = false;
+          _pingInProgress[configId] = false;
+          return null;
+        }
 
         final parser = V2ray.parseFromURL(config.fullConfig);
         final delay = await _flutterV2ray
@@ -556,6 +580,13 @@ class V2RayService extends ChangeNotifier {
                 throw Exception('V2Ray ping timeout');
               },
             );
+
+        // Check for cancellation after getting delay
+        if (cancellationToken?.isCancelled == true) {
+          _pingInProgress[hostKey] = false;
+          _pingInProgress[configId] = false;
+          return null;
+        }
 
         // Cache the result by both host and config ID
         if (delay >= -1 && delay < 10000) {

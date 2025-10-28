@@ -105,7 +105,9 @@ class _ConnectionButtonState extends State<ConnectionButton> {
       // Check if operation was cancelled
       if (result.errorMessage == 'Auto-select cancelled') {
         // Close the dialog
-        Navigator.of(context).pop();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.tr('common.cancel')),
@@ -116,7 +118,9 @@ class _ConnectionButtonState extends State<ConnectionButton> {
       }
 
       // Close the dialog
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
 
       if (result.selectedConfig != null && result.bestPing != null) {
         // Select and connect to the best server
@@ -136,7 +140,9 @@ class _ConnectionButtonState extends State<ConnectionButton> {
       }
     } catch (e) {
       // Close the dialog
-      Navigator.of(context).pop();
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
 
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
