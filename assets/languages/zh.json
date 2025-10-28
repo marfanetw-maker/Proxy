@@ -532,7 +532,13 @@
     "error_saving": "保存设置时出错：{error}",
     "ping_batch_size": "Ping批处理大小",
     "ping_batch_size_desc": "服务器测试期间同时Ping的服务器数量（1-10）",
-    "ping_batch_size_hint": "输入1到10之间的数字"
+    "ping_batch_size_hint": "输入1到10之间的数字",
+    "proxy_mode": "代理模式",
+    "proxy_mode_desc": "启用代理模式以使用SOCKS/HTTP代理而不是VPN",
+    "proxy_information": "代理信息",
+    "socks_proxy": "SOCKS代理: 127.0.0.1:10808",
+    "http_proxy": "HTTP代理: 127.0.0.1:10809",
+    "proxy_note": "注意: 这些代理在连接激活时可用"
   },
   "persian_gulf": {
     "title": "波斯湾",

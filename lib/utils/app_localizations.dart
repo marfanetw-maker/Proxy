@@ -813,6 +813,13 @@ class TranslationKeys {
   static const String vpnSettingsSavedSuccess = 'vpn_settings.saved_success';
   static const String vpnSettingsErrorLoading = 'vpn_settings.error_loading';
   static const String vpnSettingsErrorSaving = 'vpn_settings.error_saving';
+  // Proxy Mode translations
+  static const String vpnSettingsProxyMode = 'vpn_settings.proxy_mode';
+  static const String vpnSettingsProxyModeDesc = 'vpn_settings.proxy_mode_desc';
+  static const String vpnSettingsProxyInformation = 'vpn_settings.proxy_information';
+  static const String vpnSettingsSocksProxy = 'vpn_settings.socks_proxy';
+  static const String vpnSettingsHttpProxy = 'vpn_settings.http_proxy';
+  static const String vpnSettingsProxyNote = 'vpn_settings.proxy_note';
 
   // Persian Gulf Page
   static const String persianGulfTitle = 'persian_gulf.title';

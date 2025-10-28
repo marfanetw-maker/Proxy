@@ -56,7 +56,8 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
           '1.1.1.1\n1.0.0.1\n8.8.8.8\n8.8.4.4';
       final int savedPingBatchSize =
           prefs.getInt(_pingBatchSizeKey) ?? 5; // Default to 5
-      final bool savedProxyModeEnabled = prefs.getBool('proxy_mode_enabled') ?? false;
+      final bool savedProxyModeEnabled =
+          prefs.getBool('proxy_mode_enabled') ?? false;
 
       setState(() {
         bypassSubnetController.text = savedSubnets;
@@ -67,10 +68,13 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
         isProxyModeEnabled = savedProxyModeEnabled;
         isLoading = false;
       });
-      
+
       // Update the provider's proxy mode state
       if (mounted) {
-        final v2rayProvider = Provider.of<V2RayProvider>(context, listen: false);
+        final v2rayProvider = Provider.of<V2RayProvider>(
+          context,
+          listen: false,
+        );
         v2rayProvider.toggleProxyMode(savedProxyModeEnabled);
       }
     } catch (e) {
@@ -224,7 +228,8 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     context.tr(
@@ -262,7 +267,8 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                                 controller: bypassSubnetController,
                                 decoration: InputDecoration(
                                   hintText: context.tr(
-                                    TranslationKeys.vpnSettingsBypassSubnetsHint,
+                                    TranslationKeys
+                                        .vpnSettingsBypassSubnetsHint,
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
@@ -339,10 +345,13 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Proxy Mode',
+                                    context.tr(
+                                      TranslationKeys.vpnSettingsProxyMode,
+                                    ),
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -363,7 +372,9 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Enable proxy mode to use SOCKS/HTTP proxies instead of VPN',
+                                context.tr(
+                                  TranslationKeys.vpnSettingsProxyModeDesc,
+                                ),
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
@@ -378,10 +389,14 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Proxy Information',
+                                        context.tr(
+                                          TranslationKeys
+                                              .vpnSettingsProxyInformation,
+                                        ),
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
@@ -390,7 +405,9 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'SOCKS Proxy: 127.0.0.1:10808',
+                                        context.tr(
+                                          TranslationKeys.vpnSettingsSocksProxy,
+                                        ),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontFamily: 'monospace',
@@ -398,7 +415,9 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'HTTP Proxy: 127.0.0.1:10809',
+                                        context.tr(
+                                          TranslationKeys.vpnSettingsHttpProxy,
+                                        ),
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontFamily: 'monospace',
@@ -406,7 +425,9 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Note: These proxies will be available when a connection is active',
+                                        context.tr(
+                                          TranslationKeys.vpnSettingsProxyNote,
+                                        ),
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.orangeAccent,
@@ -436,7 +457,8 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     context.tr(
@@ -511,7 +533,8 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                                         : null,
                                     child: Text(
                                       context.tr(
-                                        TranslationKeys.vpnSettingsDnsResetDefault,
+                                        TranslationKeys
+                                            .vpnSettingsDnsResetDefault,
                                       ),
                                       style: const TextStyle(
                                         color: AppTheme.primaryGreen,
@@ -628,7 +651,9 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                context.tr(TranslationKeys.vpnSettingsAboutBypass),
+                                context.tr(
+                                  TranslationKeys.vpnSettingsAboutBypass,
+                                ),
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,

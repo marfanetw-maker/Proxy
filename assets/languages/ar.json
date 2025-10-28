@@ -539,7 +539,13 @@
     "error_saving": "خطأ في حفظ الإعدادات: {error}",
     "ping_batch_size": "حجم دفعة Ping",
     "ping_batch_size_desc": "عدد الخوادم المراد اختبارها بالبينغ في نفس الوقت أثناء اختبار الخادم (1-10)",
-    "ping_batch_size_hint": "أدخل رقماً بين 1 و 10"
+    "ping_batch_size_hint": "أدخل رقماً بين 1 و 10",
+    "proxy_mode": "وضع البروكسي",
+    "proxy_mode_desc": "تمكين وضع البروكسي لاستخدام بروكسيات SOCKS/HTTP بدلاً من VPN",
+    "proxy_information": "معلومات البروكسي",
+    "socks_proxy": "بروكسي SOCKS: 127.0.0.1:10808",
+    "http_proxy": "بروكسي HTTP: 127.0.0.1:10809",
+    "proxy_note": "ملاحظة: هذه البروكسيات ستكون متاحة عند تنشيط الاتصال"
   },
   "persian_gulf": {
     "title": "الخليج الفارسي",

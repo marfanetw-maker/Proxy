@@ -823,7 +823,8 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
           for (int i = 0; i < _configs.length; i++) {
             if (_configs[i].id == config.id) {
               _configs[i].isConnected = true;
-              _configs[i].isProxyMode = _isProxyMode; // Update proxy mode status
+              _configs[i].isProxyMode =
+                  _isProxyMode; // Update proxy mode status
             } else {
               _configs[i].isConnected = false;
             }
