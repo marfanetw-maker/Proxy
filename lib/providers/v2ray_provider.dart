@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_v2ray_client/flutter_v2ray.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/v2ray_config.dart';
 import '../models/subscription.dart';
 import '../services/v2ray_service.dart';
@@ -99,6 +100,10 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
 
       // Load subscriptions
       await loadSubscriptions();
+
+      // Load proxy mode setting from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      _isProxyMode = prefs.getBool('proxy_mode_enabled') ?? false;
 
       // Update all subscriptions on app start
       await updateAllSubscriptions();
@@ -818,11 +823,13 @@ class V2RayProvider with ChangeNotifier, WidgetsBindingObserver {
           for (int i = 0; i < _configs.length; i++) {
             if (_configs[i].id == config.id) {
               _configs[i].isConnected = true;
+              _configs[i].isProxyMode = _isProxyMode; // Update proxy mode status
             } else {
               _configs[i].isConnected = false;
             }
           }
           _selectedConfig = config;
+          _isProxyMode = _isProxyMode; // Update provider's proxy mode state
 
           // Persist the changes with error handling
           try {
