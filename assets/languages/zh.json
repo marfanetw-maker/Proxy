@@ -537,7 +537,7 @@
     "proxy_mode_desc": "启用代理模式以使用SOCKS/HTTP代理而不是VPN",
     "proxy_information": "代理信息",
     "socks_proxy": "SOCKS代理: 127.0.0.1:10808",
-    "http_proxy": "HTTP代理: 127.0.0.1:10809",
+    "http_proxy": "HTTP代理: 127.0.0.1:1080",
     "proxy_note": "注意: 这些代理在连接激活时可用"
   },
   "persian_gulf": {
