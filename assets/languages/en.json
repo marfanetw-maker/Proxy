@@ -462,7 +462,7 @@
         "proxy_mode_desc": "Enable proxy mode to use SOCKS/HTTP proxies instead of VPN",
         "proxy_information": "Proxy Information",
         "socks_proxy": "SOCKS Proxy: 127.0.0.1:10808",
-        "http_proxy": "HTTP Proxy: 127.0.0.1:10809",
+        "http_proxy": "HTTP Proxy: 127.0.0.1:1080",
         "proxy_note": "Note: These proxies will be available when a connection is active"
     },
     "store_screen": {
