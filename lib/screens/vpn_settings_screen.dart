@@ -406,16 +406,6 @@ class _VpnSettingsScreenState extends State<VpnSettingsScreen> {
                                       const SizedBox(height: 8),
                                       Text(
                                         context.tr(
-                                          TranslationKeys.vpnSettingsSocksProxy,
-                                        ),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontFamily: 'monospace',
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        context.tr(
                                           TranslationKeys.vpnSettingsHttpProxy,
                                         ),
                                         style: TextStyle(
