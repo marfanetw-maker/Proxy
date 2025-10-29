@@ -462,7 +462,7 @@
         "proxy_mode_desc": "VPN yerine SOCKS/HTTP proxy'lerini kullanmak için proxy modunu etkinleştirin",
         "proxy_information": "Proxy Bilgisi",
         "socks_proxy": "SOCKS Proxy: 127.0.0.1:10808",
-        "http_proxy": "HTTP Proxy: 127.0.0.1:10809",
+        "http_proxy": "HTTP Proxy: 127.0.0.1:1080",
         "proxy_note": "Not: Bu proxy'ler bir bağlantı aktif olduğunda kullanılabilir olacaktır"
     },
     "store_screen": {
